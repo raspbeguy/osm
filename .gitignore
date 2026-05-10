@@ -1,0 +1,9 @@
+*.test
+*.out
+*.exe
+*.swp
+.idea/
+.vscode/
+dist/
+/osm
+/cmd/osm/osm
