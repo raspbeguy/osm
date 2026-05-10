@@ -45,6 +45,18 @@ func LoadToken() (*oauth2.Token, error) {
 	return &t, nil
 }
 
+// RemoveToken deletes the persisted token; missing file is not an error.
+func RemoveToken() error {
+	p, err := tokenPath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
 // SaveToken writes the token with mode 0600, creating parents with 0700.
 func SaveToken(tok *oauth2.Token) error {
 	p, err := tokenPath()
