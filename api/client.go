@@ -1,0 +1,101 @@
+// Package api is a Go client for the OpenStreetMap API v0.6.
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"encoding/xml"
+	"io"
+	"net/http"
+	"strings"
+)
+
+const (
+	DefaultBaseURL   = "https://api.openstreetmap.org/api/0.6"
+	SandboxBaseURL   = "https://master.apis.dev.openstreetmap.org/api/0.6"
+	DefaultUserAgent = "osm-go (https://github.com/raspbeguy/osm)"
+)
+
+type Client struct {
+	BaseURL   string
+	HTTP      *http.Client
+	UserAgent string
+}
+
+func NewClient(httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	return &Client{BaseURL: DefaultBaseURL, HTTP: httpClient, UserAgent: DefaultUserAgent}
+}
+
+// Do sends req, applies the User-Agent, and maps non-2xx into typed errors.
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	if c.UserAgent != "" {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		resp.Body.Close()
+		return nil, mapHTTPError(resp.StatusCode, resp.Status, string(b))
+	}
+	return resp, nil
+}
+
+func (c *Client) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	return http.NewRequestWithContext(ctx, method, strings.TrimRight(c.BaseURL, "/")+path, body)
+}
+
+func (c *Client) getJSON(ctx context.Context, path string, into any) error {
+	r, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return err
+	}
+	r.Header.Set("Accept", "application/json")
+	resp, err := c.Do(r)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return json.NewDecoder(resp.Body).Decode(into)
+}
+
+func (c *Client) getXML(ctx context.Context, path string, into any) error {
+	r, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return err
+	}
+	r.Header.Set("Accept", "application/xml")
+	resp, err := c.Do(r)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return xml.NewDecoder(resp.Body).Decode(into)
+}
+
+func (c *Client) sendBody(ctx context.Context, method, path string, body []byte, contentType string) (string, error) {
+	var br io.Reader
+	if body != nil {
+		br = bytes.NewReader(body)
+	}
+	r, err := c.newRequest(ctx, method, path, br)
+	if err != nil {
+		return "", err
+	}
+	if contentType != "" {
+		r.Header.Set("Content-Type", contentType)
+	}
+	resp, err := c.Do(r)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	out, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	return string(out), err
+}
