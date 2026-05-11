@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"text/template"
 	"time"
 
 	"github.com/paulmach/osm"
@@ -18,14 +20,39 @@ var changesetCmd = &cobra.Command{
 
 var (
 	csListMine    bool
+	csListFormat  string
 	csOpenComment string
 	csOpenSource  string
 )
 
+const defaultChangesetListFormat = "{{.ID}}\t{{.CreatedAt.Format \"2006-01-02\"}}\t{{.User}}\t{{.Comment}}"
+
 var csListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list changesets",
+	Long: `List changesets.
+
+The --format flag accepts a Go text/template against each changeset. Fields
+(from github.com/paulmach/osm.Changeset):
+  ID, User, UserID, CreatedAt, ClosedAt, Open, ChangesCount, MinLat, MaxLat,
+  MinLon, MaxLon, CommentsCount, Tags.
+Methods callable from the template:
+  Comment, Source, CreatedBy, Locale, ImageryUsed, Host, Bot.
+
+CreatedAt and ClosedAt are time.Time; format them with .Format, e.g.
+{{.CreatedAt.Format "2006-01-02 15:04"}}.
+
+Example:
+  osm changeset list --mine --format '{{.ID}} ({{.ChangesCount}} edits) {{.Comment}}'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format := csListFormat
+		if format == "" {
+			format = defaultChangesetListFormat
+		}
+		tmpl, err := template.New("changesets").Parse(format)
+		if err != nil {
+			return fmt.Errorf("parse --format: %w", err)
+		}
 		c, err := newAPIClient(cmd.Context())
 		if err != nil {
 			return err
@@ -43,7 +70,10 @@ var csListCmd = &cobra.Command{
 			return err
 		}
 		for _, cs := range css {
-			fmt.Printf("%d\t%s\t%s\t%s\n", cs.ID, cs.User, cs.CreatedAt.Format(time.RFC3339), cs.Comment())
+			if err := tmpl.Execute(os.Stdout, cs); err != nil {
+				return err
+			}
+			fmt.Println()
 		}
 		return nil
 	},
@@ -132,6 +162,7 @@ var csCommentCmd = &cobra.Command{
 
 func init() {
 	csListCmd.Flags().BoolVar(&csListMine, "mine", false, "only my changesets")
+	csListCmd.Flags().StringVar(&csListFormat, "format", "", "Go template per changeset (see --help for fields)")
 	csOpenCmd.Flags().StringVar(&csOpenComment, "comment", "", "changeset comment tag")
 	csOpenCmd.Flags().StringVar(&csOpenSource, "source", "", "changeset source tag")
 	changesetCmd.AddCommand(csListCmd, csShowCmd, csOpenCmd, csCloseCmd, csCommentCmd)
