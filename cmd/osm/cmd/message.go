@@ -15,15 +15,6 @@ const defaultInboxFormat = "{{if .Read}} {{else}}*{{end}} {{.ID}}\t{{date .SentO
 
 var inboxFormat string
 
-var inboxFuncs = template.FuncMap{
-	"date": func(s string) string {
-		if len(s) >= 10 {
-			return s[:10]
-		}
-		return s
-	},
-}
-
 var msgInboxCmd = &cobra.Command{
 	Use:   "inbox",
 	Short: "list inbox messages",
@@ -36,15 +27,19 @@ The --format flag accepts a Go text/template against each message. Fields:
 
 Template functions:
   date <s>   truncate an RFC3339 timestamp to "YYYY-MM-DD".
+  json <v>   marshal the value as JSON.
+  csv <a>... encode the arguments as one CSV row.
 
-Example:
-  osm message inbox --format '{{.SentOn}}  {{.FromUser}}: {{.Title}}'`,
+Examples:
+  osm message inbox --format '{{.SentOn}}  {{.FromUser}}: {{.Title}}'
+  osm message inbox --format '{{json .}}'                       # JSONL
+  osm message inbox --format '{{csv .ID .SentOn .FromUser .Title}}'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		format := inboxFormat
 		if format == "" {
 			format = defaultInboxFormat
 		}
-		tmpl, err := template.New("inbox").Funcs(inboxFuncs).Parse(format)
+		tmpl, err := template.New("inbox").Funcs(tmplFuncs).Parse(format)
 		if err != nil {
 			return fmt.Errorf("parse --format: %w", err)
 		}
@@ -75,7 +70,7 @@ var msgOutboxCmd = &cobra.Command{
 		if format == "" {
 			format = defaultInboxFormat
 		}
-		tmpl, err := template.New("outbox").Funcs(inboxFuncs).Parse(format)
+		tmpl, err := template.New("outbox").Funcs(tmplFuncs).Parse(format)
 		if err != nil {
 			return fmt.Errorf("parse --format: %w", err)
 		}

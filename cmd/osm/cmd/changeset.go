@@ -42,14 +42,20 @@ Methods callable from the template:
 CreatedAt and ClosedAt are time.Time; format them with .Format, e.g.
 {{.CreatedAt.Format "2006-01-02 15:04"}}.
 
-Example:
-  osm changeset list --mine --format '{{.ID}} ({{.ChangesCount}} edits) {{.Comment}}'`,
+Template functions:
+  json <v>   marshal the value as JSON.
+  csv <a>... encode the arguments as one CSV row.
+
+Examples:
+  osm changeset list --mine --format '{{.ID}} ({{.ChangesCount}} edits) {{.Comment}}'
+  osm changeset list --mine --format '{{json .}}'
+  osm changeset list --mine --format '{{csv .ID (.CreatedAt.Format "2006-01-02") .User .Comment}}'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		format := csListFormat
 		if format == "" {
 			format = defaultChangesetListFormat
 		}
-		tmpl, err := template.New("changesets").Parse(format)
+		tmpl, err := template.New("changesets").Funcs(tmplFuncs).Parse(format)
 		if err != nil {
 			return fmt.Errorf("parse --format: %w", err)
 		}
