@@ -20,14 +20,23 @@ type changesetViewLoadedMsg struct {
 	err  error
 }
 
+type changesetXMLLoadedMsg struct {
+	csID osm.ChangesetID
+	xml  string
+	err  error
+}
+
 type changesetViewModel struct {
-	client   *api.Client
-	csID     osm.ChangesetID
-	spinner  spinner.Model
-	viewport viewport.Model
-	cs       *osm.Changeset
-	err      error
-	loading  bool
+	client     *api.Client
+	csID       osm.ChangesetID
+	spinner    spinner.Model
+	viewport   viewport.Model
+	cs         *osm.Changeset
+	err        error
+	loading    bool
+	xml        string
+	xmlLoading bool
+	showXML    bool
 }
 
 func newChangesetView(c *api.Client) changesetViewModel {
@@ -47,7 +56,19 @@ func (m changesetViewModel) show(id int64) (changesetViewModel, tea.Cmd) {
 	m.loading = true
 	m.err = nil
 	m.cs = nil
+	m.xml = ""
+	m.xmlLoading = false
+	m.showXML = false
 	return m, tea.Batch(m.spinner.Tick, m.load())
+}
+
+func (m changesetViewModel) loadXML() tea.Cmd {
+	client := m.client
+	id := m.csID
+	return func() tea.Msg {
+		xml, err := client.DownloadChangeset(context.Background(), id)
+		return changesetXMLLoadedMsg{csID: id, xml: xml, err: err}
+	}
 }
 
 func (m changesetViewModel) load() tea.Cmd {
@@ -70,13 +91,37 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 		m.err = msg.err
 		m = m.rewrap()
 		return m, nil
+	case changesetXMLLoadedMsg:
+		if msg.csID != m.csID {
+			return m, nil
+		}
+		m.xmlLoading = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.xml = msg.xml
+		if m.showXML {
+			m.viewport.SetContent(wrapText(m.xml, m.viewport.Width))
+		}
+		return m, nil
 	case spinner.TickMsg:
-		if !m.loading {
+		if !m.loading && !m.xmlLoading {
 			return m, nil
 		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+	case tea.KeyMsg:
+		if msg.String() == "x" && m.cs != nil {
+			m.showXML = !m.showXML
+			m = m.rewrap()
+			if m.showXML && m.xml == "" && !m.xmlLoading {
+				m.xmlLoading = true
+				return m, tea.Batch(m.spinner.Tick, m.loadXML())
+			}
+			return m, nil
+		}
 	}
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -84,7 +129,9 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 }
 
 func (m changesetViewModel) rewrap() changesetViewModel {
-	if m.cs != nil {
+	if m.showXML && m.xml != "" {
+		m.viewport.SetContent(wrapText(m.xml, m.viewport.Width))
+	} else if m.cs != nil {
 		m.viewport.SetContent(wrapText(formatChangesetBody(m.cs), m.viewport.Width))
 	}
 	return m
@@ -111,7 +158,14 @@ func (m changesetViewModel) View() string {
 	header := headerStyle.Render(title) + "\n" +
 		mutedStyle.Render(fmt.Sprintf("id %d • %s • open %v • created %s • closed %s",
 			m.cs.ID, m.cs.User, m.cs.Open, m.cs.CreatedAt.Format(time.RFC3339), closedAt))
-	return header + "\n\n" + m.viewport.View() + "\n" + footerStyle.Render("esc back")
+	footer := "esc back, x show osmChange xml"
+	if m.showXML {
+		footer = "esc back, x back to summary"
+		if m.xmlLoading {
+			footer = "loading xml... esc back"
+		}
+	}
+	return header + "\n\n" + m.viewport.View() + "\n" + footerStyle.Render(footer)
 }
 
 func formatChangesetBody(cs *osm.Changeset) string {
