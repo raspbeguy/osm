@@ -121,8 +121,16 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		if msg.String() == "r" {
+		switch msg.String() {
+		case "r":
 			return m.show()
+		case "enter":
+			if sel := m.selected(); sel != nil {
+				parent := screenInbox
+				return m, func() tea.Msg {
+					return navigateMsg{to: screenReader, msgID: sel.ID, parent: parent}
+				}
+			}
 		}
 	}
 	var cmd tea.Cmd

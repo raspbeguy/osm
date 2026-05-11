@@ -35,6 +35,13 @@ func newMenu() menuModel {
 func (m menuModel) Init() tea.Cmd { return nil }
 
 func (m menuModel) Update(msg tea.Msg) (menuModel, tea.Cmd) {
+	if k, ok := msg.(tea.KeyMsg); ok && k.String() == "enter" {
+		if target, ok := m.selected(); ok {
+			return m, func() tea.Msg {
+				return navigateMsg{to: target, refresh: true}
+			}
+		}
+	}
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
 	return m, cmd

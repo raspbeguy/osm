@@ -12,7 +12,17 @@ const (
 	screenMenu screen = iota
 	screenProfile
 	screenInbox
+	screenReader
 )
+
+// navigateMsg requests a screen change. refresh asks the destination to
+// re-load its contents. msgID and parent are used by screenReader.
+type navigateMsg struct {
+	to      screen
+	msgID   int64
+	parent  screen
+	refresh bool
+}
 
 type rootModel struct {
 	client  *api.Client
@@ -22,6 +32,7 @@ type rootModel struct {
 	menu    menuModel
 	profile profileModel
 	inbox   messagesModel
+	reader  readerModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -31,6 +42,7 @@ func newRoot(c *api.Client) rootModel {
 		menu:    newMenu(),
 		profile: newProfile(c),
 		inbox:   newMessages(c, dirInbox),
+		reader:  newReader(c),
 	}
 }
 
@@ -45,30 +57,40 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.profile.viewport.Width = msg.Width
 		m.profile.viewport.Height = msg.Height - 4
 		m.inbox.list.SetSize(msg.Width, msg.Height-3)
+		m.reader.viewport.Width = msg.Width
+		m.reader.viewport.Height = msg.Height - 8
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "esc":
-			if m.screen != screenMenu {
+			switch m.screen {
+			case screenMenu:
+				return m, tea.Quit
+			case screenReader:
+				if m.reader.confirming {
+					break // let reader handle the cancel
+				}
+				dest := m.reader.parent
+				if dest == 0 {
+					dest = screenMenu
+				}
+				m.screen = dest
+				return m, nil
+			default:
 				m.screen = screenMenu
 				return m, nil
 			}
-			return m, tea.Quit
 		case "q":
 			if m.screen == screenMenu {
 				return m, tea.Quit
 			}
-		case "enter":
-			if m.screen == screenMenu {
-				if target, ok := m.menu.selected(); ok {
-					return m.navigate(target)
-				}
-				return m, nil
-			}
 		}
+	case navigateMsg:
+		return m.handleNavigate(msg)
 	}
+
 	var cmd tea.Cmd
 	switch m.screen {
 	case screenMenu:
@@ -77,20 +99,29 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.profile, cmd = m.profile.Update(msg)
 	case screenInbox:
 		m.inbox, cmd = m.inbox.Update(msg)
+	case screenReader:
+		m.reader, cmd = m.reader.Update(msg)
 	}
 	return m, cmd
 }
 
-func (m rootModel) navigate(target screen) (rootModel, tea.Cmd) {
-	m.screen = target
-	switch target {
+func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
+	m.screen = msg.to
+	switch msg.to {
 	case screenProfile:
 		var cmd tea.Cmd
 		m.profile, cmd = m.profile.show()
 		return m, cmd
 	case screenInbox:
+		if msg.refresh || (len(m.inbox.list.Items()) == 0 && !m.inbox.loading) {
+			var cmd tea.Cmd
+			m.inbox, cmd = m.inbox.show()
+			return m, cmd
+		}
+		return m, nil
+	case screenReader:
 		var cmd tea.Cmd
-		m.inbox, cmd = m.inbox.show()
+		m.reader, cmd = m.reader.show(msg.msgID, msg.parent)
 		return m, cmd
 	}
 	return m, nil
@@ -104,6 +135,8 @@ func (m rootModel) View() string {
 		return m.profile.View()
 	case screenInbox:
 		return m.inbox.View()
+	case screenReader:
+		return m.reader.View()
 	}
 	return ""
 }
