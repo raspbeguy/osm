@@ -11,6 +11,7 @@ type screen int
 const (
 	screenMenu screen = iota
 	screenProfile
+	screenInbox
 )
 
 type rootModel struct {
@@ -20,6 +21,7 @@ type rootModel struct {
 	screen  screen
 	menu    menuModel
 	profile profileModel
+	inbox   messagesModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -28,6 +30,7 @@ func newRoot(c *api.Client) rootModel {
 		screen:  screenMenu,
 		menu:    newMenu(),
 		profile: newProfile(c),
+		inbox:   newMessages(c, dirInbox),
 	}
 }
 
@@ -41,6 +44,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.menu.list.SetSize(msg.Width, msg.Height-2)
 		m.profile.viewport.Width = msg.Width
 		m.profile.viewport.Height = msg.Height - 4
+		m.inbox.list.SetSize(msg.Width, msg.Height-3)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -71,6 +75,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.menu, cmd = m.menu.Update(msg)
 	case screenProfile:
 		m.profile, cmd = m.profile.Update(msg)
+	case screenInbox:
+		m.inbox, cmd = m.inbox.Update(msg)
 	}
 	return m, cmd
 }
@@ -82,6 +88,10 @@ func (m rootModel) navigate(target screen) (rootModel, tea.Cmd) {
 		var cmd tea.Cmd
 		m.profile, cmd = m.profile.show()
 		return m, cmd
+	case screenInbox:
+		var cmd tea.Cmd
+		m.inbox, cmd = m.inbox.show()
+		return m, cmd
 	}
 	return m, nil
 }
@@ -92,6 +102,8 @@ func (m rootModel) View() string {
 		return m.menu.View()
 	case screenProfile:
 		return m.profile.View()
+	case screenInbox:
+		return m.inbox.View()
 	}
 	return ""
 }

@@ -22,6 +22,7 @@ type menuModel struct {
 func newMenu() menuModel {
 	items := []list.Item{
 		menuItem{name: "Profile", desc: "your osm account", target: screenProfile},
+		menuItem{name: "Inbox", desc: "received messages", target: screenInbox},
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 40, 20)
 	l.Title = "osm tui"
