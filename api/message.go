@@ -9,9 +9,9 @@ import (
 
 type Message struct {
 	ID         int64  `json:"id"`
-	FromUser   string `json:"from_user"`
+	FromUser   string `json:"from_display_name"`
 	FromUserID int64  `json:"from_user_id"`
-	ToUser     string `json:"to_user"`
+	ToUser     string `json:"to_display_name"`
 	ToUserID   int64  `json:"to_user_id"`
 	SentOn     string `json:"sent_on"`
 	Title      string `json:"title"`

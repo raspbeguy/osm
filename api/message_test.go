@@ -12,7 +12,7 @@ func TestListInbox(t *testing.T) {
 		if r.URL.Path != "/user/messages/inbox.json" {
 			t.Errorf("path=%s", r.URL.Path)
 		}
-		io.WriteString(w, `{"messages":[{"id":1,"from_user":"a","title":"hi","message_read":false}]}`)
+		io.WriteString(w, `{"messages":[{"id":1,"from_display_name":"a","title":"hi","message_read":false}]}`)
 	}))
 	msgs, err := c.ListInbox(context.Background())
 	if err != nil {
