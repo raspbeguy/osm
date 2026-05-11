@@ -2,17 +2,52 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strconv"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
 
 var messageCmd = &cobra.Command{Use: "message", Short: "manage your inbox"}
 
+const defaultInboxFormat = "{{if .Read}} {{else}}*{{end}} {{.ID}}\t{{date .SentOn}}\t{{.FromUser}}\t{{.Title}}"
+
+var inboxFormat string
+
+var inboxFuncs = template.FuncMap{
+	"date": func(s string) string {
+		if len(s) >= 10 {
+			return s[:10]
+		}
+		return s
+	},
+}
+
 var msgInboxCmd = &cobra.Command{
 	Use:   "inbox",
 	Short: "list inbox messages",
+	Long: `List inbox messages.
+
+The --format flag accepts a Go text/template against each message. Fields:
+  ID, FromUser, FromUserID, ToUser, ToUserID, SentOn, Title, BodyFormat,
+  Read, Deleted. Body is not returned in listings; use 'osm message read' to
+  fetch a single message including its body.
+
+Template functions:
+  date <s>   truncate an RFC3339 timestamp to "YYYY-MM-DD".
+
+Example:
+  osm message inbox --format '{{.SentOn}}  {{.FromUser}}: {{.Title}}'`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format := inboxFormat
+		if format == "" {
+			format = defaultInboxFormat
+		}
+		tmpl, err := template.New("inbox").Funcs(inboxFuncs).Parse(format)
+		if err != nil {
+			return fmt.Errorf("parse --format: %w", err)
+		}
 		c, err := newAPIClient(cmd.Context())
 		if err != nil {
 			return err
@@ -22,11 +57,10 @@ var msgInboxCmd = &cobra.Command{
 			return err
 		}
 		for _, m := range msgs {
-			marker := " "
-			if !m.Read {
-				marker = "*"
+			if err := tmpl.Execute(os.Stdout, m); err != nil {
+				return err
 			}
-			fmt.Printf("%s %d\t%s\t%s\n", marker, m.ID, m.FromUser, m.Title)
+			fmt.Println()
 		}
 		return nil
 	},
@@ -72,6 +106,7 @@ var msgDeleteCmd = &cobra.Command{
 }
 
 func init() {
+	msgInboxCmd.Flags().StringVar(&inboxFormat, "format", "", "Go template per message (see --help for fields)")
 	messageCmd.AddCommand(msgInboxCmd, msgReadCmd, msgDeleteCmd)
 	rootCmd.AddCommand(messageCmd)
 }
