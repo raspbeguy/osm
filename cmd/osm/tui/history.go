@@ -65,6 +65,19 @@ func (m historyModel) show() (historyModel, tea.Cmd) {
 	return m, textinput.Blink
 }
 
+// showResult enters the history screen with kind+id already known, skipping
+// the input step. Used when navigating from the item view.
+func (m historyModel) showResult(kind string, id int64) (historyModel, tea.Cmd) {
+	m.state = historyStateLoading
+	m.err = nil
+	m.rawText = ""
+	client := m.client
+	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		text, err := fetchHistory(client, kind, id)
+		return historyLoadedMsg{text: text, err: err}
+	})
+}
+
 func (m historyModel) rewrap() historyModel {
 	if m.state == historyStateResult && m.rawText != "" {
 		m.viewport.SetContent(wrapText(m.rawText, m.viewport.Width))

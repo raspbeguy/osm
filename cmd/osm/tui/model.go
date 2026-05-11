@@ -21,13 +21,17 @@ const (
 	screenHistory
 	screenTraces
 	screenTraceView
+	screenItemView
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
-// re-load its contents. msgID and parent are used by screenReader.
+// re-load its contents. itemID is the per-screen target id (message id for
+// reader, changeset id for changeset view, element id for item/history view).
+// kind (node|way|relation) selects history's element kind on direct-load.
 type navigateMsg struct {
 	to      screen
 	itemID  int64
+	kind    string
 	parent  screen
 	refresh bool
 }
@@ -49,6 +53,7 @@ type rootModel struct {
 	history    historyModel
 	traces     tracesModel
 	traceView  traceViewModel
+	itemView   itemViewModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -67,6 +72,7 @@ func newRoot(c *api.Client) rootModel {
 		history:    newHistory(c),
 		traces:     newTraces(c),
 		traceView:  newTraceView(c),
+		itemView:   newItemView(),
 	}
 }
 
@@ -99,6 +105,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.traces.list.SetSize(msg.Width, msg.Height-3)
 		m.traceView.viewport.Width = msg.Width
 		m.traceView.viewport.Height = msg.Height - 8
+		m.csview.elementsList.SetSize(msg.Width, msg.Height-8)
 		// re-wrap any loaded content for the new width
 		m.profile = m.profile.rewrap()
 		m.reader = m.reader.rewrap()
@@ -130,6 +137,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case screenTraceView:
 				m.screen = screenTraces
+				return m, nil
+			case screenItemView:
+				m.screen = screenChangesetView
 				return m, nil
 			default:
 				m.screen = screenMenu
@@ -170,6 +180,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.traces, cmd = m.traces.Update(msg)
 	case screenTraceView:
 		m.traceView, cmd = m.traceView.Update(msg)
+	case screenItemView:
+		m.itemView, cmd = m.itemView.Update(msg)
 	}
 	return m, cmd
 }
@@ -220,7 +232,11 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 		return m, cmd
 	case screenHistory:
 		var cmd tea.Cmd
-		m.history, cmd = m.history.show()
+		if msg.kind != "" {
+			m.history, cmd = m.history.showResult(msg.kind, msg.itemID)
+		} else {
+			m.history, cmd = m.history.show()
+		}
 		return m, cmd
 	case screenTraces:
 		if msg.refresh || (len(m.traces.list.Items()) == 0 && !m.traces.loading) {
@@ -233,6 +249,9 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 		var cmd tea.Cmd
 		m.traceView, cmd = m.traceView.show(msg.itemID)
 		return m, cmd
+	case screenItemView:
+		m.itemView = m.itemView.show(m.csview.selectedElement())
+		return m, nil
 	}
 	return m, nil
 }
@@ -263,6 +282,8 @@ func (m rootModel) View() string {
 		return m.traces.View()
 	case screenTraceView:
 		return m.traceView.View()
+	case screenItemView:
+		return m.itemView.View()
 	}
 	return ""
 }
