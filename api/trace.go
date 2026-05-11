@@ -6,7 +6,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -91,10 +93,56 @@ func (c *Client) GetTrace(ctx context.Context, id int64) (*Trace, error) {
 	return wrap.Traces[0].toTrace(), nil
 }
 
-// GetTraceData returns the raw GPX file content (XML, possibly with track
-// privacy filtering applied based on the trace's visibility).
+// GetTraceData returns the raw GPX file content. The OSM API often redirects
+// to an S3 URL for the actual bytes, so we follow that redirect manually with
+// an unauthenticated request to avoid S3 rejecting the OSM Bearer token.
 func (c *Client) GetTraceData(ctx context.Context, id int64) (string, error) {
-	return c.getRaw(ctx, fmt.Sprintf("/gpx/%d/data", id), "")
+	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("/gpx/%d/data", id), nil)
+	if err != nil {
+		return "", err
+	}
+	if c.UserAgent != "" {
+		req.Header.Set("User-Agent", c.UserAgent)
+	}
+	noFollow := &http.Client{
+		Transport: c.HTTP.Transport,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := noFollow.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusOK:
+		b, err := io.ReadAll(resp.Body)
+		return string(b), err
+	case http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+		loc := resp.Header.Get("Location")
+		if loc == "" {
+			return "", fmt.Errorf("redirect without location")
+		}
+		r2, err := http.NewRequestWithContext(ctx, http.MethodGet, loc, nil)
+		if err != nil {
+			return "", err
+		}
+		resp2, err := http.DefaultClient.Do(r2)
+		if err != nil {
+			return "", err
+		}
+		defer resp2.Body.Close()
+		if resp2.StatusCode >= 400 {
+			body, _ := io.ReadAll(io.LimitReader(resp2.Body, 4096))
+			return "", fmt.Errorf("fetch %s: %s: %s", loc, resp2.Status, string(body))
+		}
+		b, err := io.ReadAll(resp2.Body)
+		return string(b), err
+	default:
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return "", mapHTTPError(resp.StatusCode, resp.Status, string(body))
+	}
 }
 
 func (c *Client) DeleteTrace(ctx context.Context, id int64) error {
