@@ -11,6 +11,39 @@ import (
 	"github.com/paulmach/osm"
 )
 
+func (c *Client) NodeHistory(ctx context.Context, id osm.NodeID) ([]*osm.Node, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/node/%d/history", id), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Nodes) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Nodes, nil
+}
+
+func (c *Client) WayHistory(ctx context.Context, id osm.WayID) ([]*osm.Way, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/way/%d/history", id), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Ways) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Ways, nil
+}
+
+func (c *Client) RelationHistory(ctx context.Context, id osm.RelationID) ([]*osm.Relation, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/relation/%d/history", id), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Relations) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Relations, nil
+}
+
 func (c *Client) GetNode(ctx context.Context, id osm.NodeID) (*osm.Node, error) {
 	var wrap osm.OSM
 	if err := c.getXML(ctx, fmt.Sprintf("/node/%d", id), &wrap); err != nil {
