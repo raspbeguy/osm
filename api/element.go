@@ -4,12 +4,60 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/paulmach/osm"
 )
+
+// GetNodes fetches multiple nodes in one request. Order matches the response,
+// not the input.
+func (c *Client) GetNodes(ctx context.Context, ids []osm.NodeID) ([]*osm.Node, error) {
+	if len(ids) == 0 {
+		return nil, errors.New("at least one id required")
+	}
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(int64(id), 10)
+	}
+	var wrap osm.OSM
+	if err := c.getXML(ctx, "/nodes?nodes="+strings.Join(parts, ","), &wrap); err != nil {
+		return nil, err
+	}
+	return wrap.Nodes, nil
+}
+
+func (c *Client) GetWays(ctx context.Context, ids []osm.WayID) ([]*osm.Way, error) {
+	if len(ids) == 0 {
+		return nil, errors.New("at least one id required")
+	}
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(int64(id), 10)
+	}
+	var wrap osm.OSM
+	if err := c.getXML(ctx, "/ways?ways="+strings.Join(parts, ","), &wrap); err != nil {
+		return nil, err
+	}
+	return wrap.Ways, nil
+}
+
+func (c *Client) GetRelations(ctx context.Context, ids []osm.RelationID) ([]*osm.Relation, error) {
+	if len(ids) == 0 {
+		return nil, errors.New("at least one id required")
+	}
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = strconv.FormatInt(int64(id), 10)
+	}
+	var wrap osm.OSM
+	if err := c.getXML(ctx, "/relations?relations="+strings.Join(parts, ","), &wrap); err != nil {
+		return nil, err
+	}
+	return wrap.Relations, nil
+}
 
 func (c *Client) NodeHistory(ctx context.Context, id osm.NodeID) ([]*osm.Node, error) {
 	var wrap osm.OSM
