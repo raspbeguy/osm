@@ -66,6 +66,37 @@ Example:
 	},
 }
 
+var msgOutboxCmd = &cobra.Command{
+	Use:   "outbox",
+	Short: "list sent messages",
+	Long:  msgInboxCmd.Long,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		format := inboxFormat
+		if format == "" {
+			format = defaultInboxFormat
+		}
+		tmpl, err := template.New("outbox").Funcs(inboxFuncs).Parse(format)
+		if err != nil {
+			return fmt.Errorf("parse --format: %w", err)
+		}
+		c, err := newAPIClient(cmd.Context())
+		if err != nil {
+			return err
+		}
+		msgs, err := c.ListOutbox(cmd.Context())
+		if err != nil {
+			return err
+		}
+		for _, m := range msgs {
+			if err := tmpl.Execute(os.Stdout, m); err != nil {
+				return err
+			}
+			fmt.Println()
+		}
+		return nil
+	},
+}
+
 var msgReadCmd = &cobra.Command{
 	Use:   "read <id>",
 	Short: "show a message",
@@ -107,6 +138,7 @@ var msgDeleteCmd = &cobra.Command{
 
 func init() {
 	msgInboxCmd.Flags().StringVar(&inboxFormat, "format", "", "Go template per message (see --help for fields)")
-	messageCmd.AddCommand(msgInboxCmd, msgReadCmd, msgDeleteCmd)
+	msgOutboxCmd.Flags().StringVar(&inboxFormat, "format", "", "Go template per message (see --help for fields)")
+	messageCmd.AddCommand(msgInboxCmd, msgOutboxCmd, msgReadCmd, msgDeleteCmd)
 	rootCmd.AddCommand(messageCmd)
 }
