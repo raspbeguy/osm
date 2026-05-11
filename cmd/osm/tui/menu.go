@@ -25,6 +25,7 @@ func newMenu() menuModel {
 		menuItem{name: "Inbox", desc: "received messages", target: screenInbox},
 		menuItem{name: "Outbox", desc: "sent messages", target: screenOutbox},
 		menuItem{name: "Changesets", desc: "your changesets", target: screenChangesets},
+		menuItem{name: "Notes", desc: "lookup a note by id or bbox", target: screenNotes},
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 40, 20)
 	l.Title = "osm tui"
