@@ -85,9 +85,7 @@ func (m readerModel) Update(msg tea.Msg) (readerModel, tea.Cmd) {
 		m.loading = false
 		m.msg = msg.msg
 		m.err = msg.err
-		if m.msg != nil {
-			m.viewport.SetContent(m.msg.Body)
-		}
+		m = m.rewrap()
 		return m, nil
 	case readerDeletedMsg:
 		if msg.msgID != m.msgID {
@@ -130,6 +128,13 @@ func (m readerModel) Update(msg tea.Msg) (readerModel, tea.Cmd) {
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
+}
+
+func (m readerModel) rewrap() readerModel {
+	if m.msg != nil {
+		m.viewport.SetContent(wrapText(m.msg.Body, m.viewport.Width))
+	}
+	return m
 }
 
 func (m readerModel) View() string {

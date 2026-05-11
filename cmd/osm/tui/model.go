@@ -79,6 +79,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes.viewport.Height = msg.Height - 6
 		m.notes.list.SetSize(msg.Width, msg.Height-3)
 		m.notes.input.Width = msg.Width - 4
+		// re-wrap any loaded content for the new width
+		m.profile = m.profile.rewrap()
+		m.reader = m.reader.rewrap()
+		m.csview = m.csview.rewrap()
+		m.notes = m.notes.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {

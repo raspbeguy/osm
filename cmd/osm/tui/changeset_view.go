@@ -68,9 +68,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 		m.loading = false
 		m.cs = msg.cs
 		m.err = msg.err
-		if m.cs != nil {
-			m.viewport.SetContent(formatChangesetBody(m.cs))
-		}
+		m = m.rewrap()
 		return m, nil
 	case spinner.TickMsg:
 		if !m.loading {
@@ -83,6 +81,13 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
+}
+
+func (m changesetViewModel) rewrap() changesetViewModel {
+	if m.cs != nil {
+		m.viewport.SetContent(wrapText(formatChangesetBody(m.cs), m.viewport.Width))
+	}
+	return m
 }
 
 func (m changesetViewModel) View() string {

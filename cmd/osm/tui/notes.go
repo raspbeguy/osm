@@ -54,6 +54,14 @@ type notesModel struct {
 	viewport viewport.Model
 	list     list.Model
 	err      error
+	note     *api.Note
+}
+
+func (m notesModel) rewrap() notesModel {
+	if m.note != nil && m.state == notesStateNote {
+		m.viewport.SetContent(wrapText(formatNote(m.note), m.viewport.Width))
+	}
+	return m
 }
 
 func newNotes(c *api.Client) notesModel {
@@ -117,7 +125,8 @@ func (m notesModel) Update(msg tea.Msg) (notesModel, tea.Cmd) {
 		}
 		if msg.note != nil {
 			m.state = notesStateNote
-			m.viewport.SetContent(formatNote(msg.note))
+			m.note = msg.note
+			m.viewport.SetContent(wrapText(formatNote(m.note), m.viewport.Width))
 			return m, nil
 		}
 		m.state = notesStateList

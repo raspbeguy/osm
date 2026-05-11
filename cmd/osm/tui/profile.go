@@ -58,9 +58,7 @@ func (m profileModel) Update(msg tea.Msg) (profileModel, tea.Cmd) {
 		m.loading = false
 		m.user = msg.user
 		m.err = msg.err
-		if m.user != nil {
-			m.viewport.SetContent(formatUser(m.user))
-		}
+		m = m.rewrap()
 		return m, nil
 	case spinner.TickMsg:
 		if !m.loading {
@@ -88,4 +86,11 @@ func (m profileModel) View() string {
 func formatUser(u *api.User) string {
 	return fmt.Sprintf("Display name : %s\nID           : %d\nCreated      : %s\nChangesets   : %d\nLanguages    : %v\n\n%s",
 		u.DisplayName, u.ID, u.AccountCreated, u.ChangesetCount, u.Languages, u.Description)
+}
+
+func (m profileModel) rewrap() profileModel {
+	if m.user != nil {
+		m.viewport.SetContent(wrapText(formatUser(m.user), m.viewport.Width))
+	}
+	return m
 }
