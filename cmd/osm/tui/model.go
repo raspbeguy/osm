@@ -19,6 +19,8 @@ const (
 	screenNotes
 	screenDoctor
 	screenHistory
+	screenTraces
+	screenTraceView
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
@@ -45,6 +47,8 @@ type rootModel struct {
 	notes      notesModel
 	doctor     doctorModel
 	history    historyModel
+	traces     tracesModel
+	traceView  traceViewModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -61,6 +65,8 @@ func newRoot(c *api.Client) rootModel {
 		notes:      newNotes(c),
 		doctor:     newDoctor(c),
 		history:    newHistory(c),
+		traces:     newTraces(c),
+		traceView:  newTraceView(c),
 	}
 }
 
@@ -90,12 +96,16 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.history.viewport.Width = msg.Width
 		m.history.viewport.Height = msg.Height - 6
 		m.history.input.Width = msg.Width - 4
+		m.traces.list.SetSize(msg.Width, msg.Height-3)
+		m.traceView.viewport.Width = msg.Width
+		m.traceView.viewport.Height = msg.Height - 8
 		// re-wrap any loaded content for the new width
 		m.profile = m.profile.rewrap()
 		m.reader = m.reader.rewrap()
 		m.csview = m.csview.rewrap()
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
+		m.traceView = m.traceView.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -117,6 +127,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case screenChangesetView:
 				m.screen = screenChangesets
+				return m, nil
+			case screenTraceView:
+				m.screen = screenTraces
 				return m, nil
 			default:
 				m.screen = screenMenu
@@ -153,6 +166,10 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.doctor, cmd = m.doctor.Update(msg)
 	case screenHistory:
 		m.history, cmd = m.history.Update(msg)
+	case screenTraces:
+		m.traces, cmd = m.traces.Update(msg)
+	case screenTraceView:
+		m.traceView, cmd = m.traceView.Update(msg)
 	}
 	return m, cmd
 }
@@ -205,6 +222,17 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 		var cmd tea.Cmd
 		m.history, cmd = m.history.show()
 		return m, cmd
+	case screenTraces:
+		if msg.refresh || (len(m.traces.list.Items()) == 0 && !m.traces.loading) {
+			var cmd tea.Cmd
+			m.traces, cmd = m.traces.show()
+			return m, cmd
+		}
+		return m, nil
+	case screenTraceView:
+		var cmd tea.Cmd
+		m.traceView, cmd = m.traceView.show(msg.itemID)
+		return m, cmd
 	}
 	return m, nil
 }
@@ -231,6 +259,10 @@ func (m rootModel) View() string {
 		return m.doctor.View()
 	case screenHistory:
 		return m.history.View()
+	case screenTraces:
+		return m.traces.View()
+	case screenTraceView:
+		return m.traceView.View()
 	}
 	return ""
 }

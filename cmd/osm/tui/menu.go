@@ -25,6 +25,7 @@ func newMenu() menuModel {
 		menuItem{name: "Inbox", desc: "received messages", target: screenInbox},
 		menuItem{name: "Outbox", desc: "sent messages", target: screenOutbox},
 		menuItem{name: "Changesets", desc: "your changesets", target: screenChangesets},
+		menuItem{name: "Traces", desc: "your gps traces", target: screenTraces},
 		menuItem{name: "Notes", desc: "lookup a note by id or bbox", target: screenNotes},
 		menuItem{name: "History", desc: "version history of an element", target: screenHistory},
 		menuItem{name: "Server info", desc: "capabilities and permissions", target: screenDoctor},
