@@ -1,6 +1,15 @@
 package api
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
+
+// DownloadMap returns every visible feature inside bbox as OSM XML.
+// bbox is [west, south, east, north] in WGS84 degrees.
+func (c *Client) DownloadMap(ctx context.Context, bbox [4]float64) (string, error) {
+	return c.getRaw(ctx, fmt.Sprintf("/map?bbox=%g,%g,%g,%g", bbox[0], bbox[1], bbox[2], bbox[3]), "application/xml")
+}
 
 type Capabilities struct {
 	Version              string
