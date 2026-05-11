@@ -14,38 +14,44 @@ const (
 	screenInbox
 	screenOutbox
 	screenReader
+	screenChangesets
+	screenChangesetView
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
 // re-load its contents. msgID and parent are used by screenReader.
 type navigateMsg struct {
 	to      screen
-	msgID   int64
+	itemID  int64
 	parent  screen
 	refresh bool
 }
 
 type rootModel struct {
-	client  *api.Client
-	width   int
-	height  int
-	screen  screen
-	menu    menuModel
-	profile profileModel
-	inbox   messagesModel
-	outbox  messagesModel
-	reader  readerModel
+	client     *api.Client
+	width      int
+	height     int
+	screen     screen
+	menu       menuModel
+	profile    profileModel
+	inbox      messagesModel
+	outbox     messagesModel
+	reader     readerModel
+	changesets changesetsModel
+	csview     changesetViewModel
 }
 
 func newRoot(c *api.Client) rootModel {
 	return rootModel{
-		client:  c,
-		screen:  screenMenu,
-		menu:    newMenu(),
-		profile: newProfile(c),
-		inbox:   newMessages(c, dirInbox),
-		outbox:  newMessages(c, dirOutbox),
-		reader:  newReader(c),
+		client:     c,
+		screen:     screenMenu,
+		menu:       newMenu(),
+		profile:    newProfile(c),
+		inbox:      newMessages(c, dirInbox),
+		outbox:     newMessages(c, dirOutbox),
+		reader:     newReader(c),
+		changesets: newChangesets(c),
+		csview:     newChangesetView(c),
 	}
 }
 
@@ -63,6 +69,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.outbox.list.SetSize(msg.Width, msg.Height-3)
 		m.reader.viewport.Width = msg.Width
 		m.reader.viewport.Height = msg.Height - 8
+		m.changesets.list.SetSize(msg.Width, msg.Height-3)
+		m.csview.viewport.Width = msg.Width
+		m.csview.viewport.Height = msg.Height - 8
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -81,6 +90,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					dest = screenMenu
 				}
 				m.screen = dest
+				return m, nil
+			case screenChangesetView:
+				m.screen = screenChangesets
 				return m, nil
 			default:
 				m.screen = screenMenu
@@ -107,6 +119,10 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.outbox, cmd = m.outbox.Update(msg)
 	case screenReader:
 		m.reader, cmd = m.reader.Update(msg)
+	case screenChangesets:
+		m.changesets, cmd = m.changesets.Update(msg)
+	case screenChangesetView:
+		m.csview, cmd = m.csview.Update(msg)
 	}
 	return m, cmd
 }
@@ -134,7 +150,18 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 		return m, nil
 	case screenReader:
 		var cmd tea.Cmd
-		m.reader, cmd = m.reader.show(msg.msgID, msg.parent)
+		m.reader, cmd = m.reader.show(msg.itemID, msg.parent)
+		return m, cmd
+	case screenChangesets:
+		if msg.refresh || (len(m.changesets.list.Items()) == 0 && !m.changesets.loading) {
+			var cmd tea.Cmd
+			m.changesets, cmd = m.changesets.show()
+			return m, cmd
+		}
+		return m, nil
+	case screenChangesetView:
+		var cmd tea.Cmd
+		m.csview, cmd = m.csview.show(msg.itemID)
 		return m, cmd
 	}
 	return m, nil
@@ -152,6 +179,10 @@ func (m rootModel) View() string {
 		return m.outbox.View()
 	case screenReader:
 		return m.reader.View()
+	case screenChangesets:
+		return m.changesets.View()
+	case screenChangesetView:
+		return m.csview.View()
 	}
 	return ""
 }

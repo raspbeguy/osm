@@ -24,6 +24,7 @@ func newMenu() menuModel {
 		menuItem{name: "Profile", desc: "your osm account", target: screenProfile},
 		menuItem{name: "Inbox", desc: "received messages", target: screenInbox},
 		menuItem{name: "Outbox", desc: "sent messages", target: screenOutbox},
+		menuItem{name: "Changesets", desc: "your changesets", target: screenChangesets},
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 40, 20)
 	l.Title = "osm tui"

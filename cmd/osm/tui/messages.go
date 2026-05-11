@@ -131,7 +131,7 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 					parent = screenOutbox
 				}
 				return m, func() tea.Msg {
-					return navigateMsg{to: screenReader, msgID: sel.ID, parent: parent}
+					return navigateMsg{to: screenReader, itemID: sel.ID, parent: parent}
 				}
 			}
 		}
