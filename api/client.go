@@ -65,6 +65,23 @@ func (c *Client) getJSON(ctx context.Context, path string, into any) error {
 	return json.NewDecoder(resp.Body).Decode(into)
 }
 
+func (c *Client) getRaw(ctx context.Context, path, accept string) (string, error) {
+	r, err := c.newRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return "", err
+	}
+	if accept != "" {
+		r.Header.Set("Accept", accept)
+	}
+	resp, err := c.Do(r)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	out, err := io.ReadAll(io.LimitReader(resp.Body, 1<<24))
+	return string(out), err
+}
+
 func (c *Client) getXML(ctx context.Context, path string, into any) error {
 	r, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {

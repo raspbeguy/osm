@@ -56,6 +56,11 @@ func (c *Client) CommentChangeset(ctx context.Context, id osm.ChangesetID, text 
 	return err
 }
 
+// DownloadChangeset returns the raw osmChange XML that was uploaded in this changeset.
+func (c *Client) DownloadChangeset(ctx context.Context, id osm.ChangesetID) (string, error) {
+	return c.getRaw(ctx, fmt.Sprintf("/changeset/%d/download", id), "application/xml")
+}
+
 // GetChangeset returns the changeset including its discussion (comments).
 func (c *Client) GetChangeset(ctx context.Context, id osm.ChangesetID) (*osm.Changeset, error) {
 	var wrap osm.OSM

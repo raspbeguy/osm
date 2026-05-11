@@ -149,6 +149,28 @@ var csCloseCmd = &cobra.Command{
 	},
 }
 
+var csDownloadCmd = &cobra.Command{
+	Use:   "download <id>",
+	Short: "fetch the osmChange XML uploaded in a changeset",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		id, err := strconv.ParseInt(args[0], 10, 64)
+		if err != nil {
+			return err
+		}
+		c, err := newAPIClient(cmd.Context())
+		if err != nil {
+			return err
+		}
+		xml, err := c.DownloadChangeset(cmd.Context(), osm.ChangesetID(id))
+		if err != nil {
+			return err
+		}
+		fmt.Print(xml)
+		return nil
+	},
+}
+
 var csCommentCmd = &cobra.Command{
 	Use:   "comment <id> <text>",
 	Short: "post a comment on a changeset",
@@ -171,6 +193,6 @@ func init() {
 	csListCmd.Flags().StringVar(&csListFormat, "format", "", "Go template per changeset (see --help for fields)")
 	csOpenCmd.Flags().StringVar(&csOpenComment, "comment", "", "changeset comment tag")
 	csOpenCmd.Flags().StringVar(&csOpenSource, "source", "", "changeset source tag")
-	changesetCmd.AddCommand(csListCmd, csShowCmd, csOpenCmd, csCloseCmd, csCommentCmd)
+	changesetCmd.AddCommand(csListCmd, csShowCmd, csOpenCmd, csCloseCmd, csCommentCmd, csDownloadCmd)
 	rootCmd.AddCommand(changesetCmd)
 }
