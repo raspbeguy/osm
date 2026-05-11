@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -44,16 +45,20 @@ func apiBaseURL() string {
 	return api.DefaultBaseURL
 }
 
-// authBases derives the OAuth2 endpoints from the configured API base.
-// Production and sandbox have distinct OAuth hosts.
+// authBases derives the OAuth2 endpoints from the API base host so that any
+// instance (production, sandbox, self-hosted) routes to its own OAuth server.
+// Production splits API and web hosts (api.openstreetmap.org vs
+// www.openstreetmap.org); the sandbox and self-hosted instances do not.
 func authBases() (string, string) {
-	switch apiBaseURL() {
-	case api.SandboxBaseURL:
-		return "https://master.apis.dev.openstreetmap.org/oauth2/authorize",
-			"https://master.apis.dev.openstreetmap.org/oauth2/token"
-	default:
+	u, err := url.Parse(apiBaseURL())
+	if err != nil || u.Host == "" {
 		return auth.DefaultAuthURL, auth.DefaultTokenURL
 	}
+	host := u.Host
+	if host == "api.openstreetmap.org" {
+		host = "www.openstreetmap.org"
+	}
+	return "https://" + host + "/oauth2/authorize", "https://" + host + "/oauth2/token"
 }
 
 func clientID() (string, error) {
