@@ -82,6 +82,7 @@ func authConfig() (auth.Config, error) {
 		Scopes: []string{
 			"openid", "read_prefs", "write_prefs",
 			"write_api", "write_notes", "consume_messages",
+			"read_gpx", "write_gpx",
 		},
 		AuthURL:  a,
 		TokenURL: t,
