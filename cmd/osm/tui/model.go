@@ -18,6 +18,7 @@ const (
 	screenChangesetView
 	screenNotes
 	screenDoctor
+	screenHistory
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
@@ -43,6 +44,7 @@ type rootModel struct {
 	csview     changesetViewModel
 	notes      notesModel
 	doctor     doctorModel
+	history    historyModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -58,6 +60,7 @@ func newRoot(c *api.Client) rootModel {
 		csview:     newChangesetView(c),
 		notes:      newNotes(c),
 		doctor:     newDoctor(c),
+		history:    newHistory(c),
 	}
 }
 
@@ -84,11 +87,15 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes.input.Width = msg.Width - 4
 		m.doctor.viewport.Width = msg.Width
 		m.doctor.viewport.Height = msg.Height - 2
+		m.history.viewport.Width = msg.Width
+		m.history.viewport.Height = msg.Height - 6
+		m.history.input.Width = msg.Width - 4
 		// re-wrap any loaded content for the new width
 		m.profile = m.profile.rewrap()
 		m.reader = m.reader.rewrap()
 		m.csview = m.csview.rewrap()
 		m.notes = m.notes.rewrap()
+		m.history = m.history.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -144,6 +151,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes, cmd = m.notes.Update(msg)
 	case screenDoctor:
 		m.doctor, cmd = m.doctor.Update(msg)
+	case screenHistory:
+		m.history, cmd = m.history.Update(msg)
 	}
 	return m, cmd
 }
@@ -192,6 +201,10 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 		var cmd tea.Cmd
 		m.doctor, cmd = m.doctor.show()
 		return m, cmd
+	case screenHistory:
+		var cmd tea.Cmd
+		m.history, cmd = m.history.show()
+		return m, cmd
 	}
 	return m, nil
 }
@@ -216,6 +229,8 @@ func (m rootModel) View() string {
 		return m.notes.View()
 	case screenDoctor:
 		return m.doctor.View()
+	case screenHistory:
+		return m.history.View()
 	}
 	return ""
 }
