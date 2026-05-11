@@ -56,9 +56,10 @@ func (c *Client) CommentChangeset(ctx context.Context, id osm.ChangesetID, text 
 	return err
 }
 
+// GetChangeset returns the changeset including its discussion (comments).
 func (c *Client) GetChangeset(ctx context.Context, id osm.ChangesetID) (*osm.Changeset, error) {
 	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/changeset/%d", id), &wrap); err != nil {
+	if err := c.getXML(ctx, fmt.Sprintf("/changeset/%d?include_discussion=true", id), &wrap); err != nil {
 		return nil, err
 	}
 	if len(wrap.Changesets) == 0 {
