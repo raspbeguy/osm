@@ -146,9 +146,9 @@ func (m messagesModel) View() string {
 		return m.spinner.View() + " loading " + m.direction.String() + "..."
 	}
 	if m.err != nil {
-		return "error: " + m.err.Error() + "\n\nesc to go back, r to retry"
+		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back, r retry")
 	}
-	return m.list.View() + "\nesc back, r refresh"
+	return m.list.View() + "\n" + footerStyle.Render("esc back, enter open, r refresh")
 }
 
 func (m messagesModel) selected() *api.Message {

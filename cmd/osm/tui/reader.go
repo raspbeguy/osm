@@ -140,16 +140,18 @@ func (m readerModel) View() string {
 		return m.spinner.View() + " deleting..."
 	}
 	if m.err != nil {
-		return "error: " + m.err.Error() + "\n\nesc to go back"
+		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc to go back")
 	}
 	if m.msg == nil {
-		return "no message\n\nesc to go back"
+		return "no message\n" + footerStyle.Render("esc to go back")
 	}
-	header := fmt.Sprintf("From: %s\nTo: %s\nSent: %s\nSubject: %s",
-		m.msg.FromUser, m.msg.ToUser, m.msg.SentOn, m.msg.Title)
+	header := headerStyle.Render(m.msg.Title) + "\n" +
+		mutedStyle.Render(fmt.Sprintf("from %s • to %s • %s", m.msg.FromUser, m.msg.ToUser, m.msg.SentOn))
 	footer := "esc back, d delete"
 	if m.confirming {
-		footer = "delete this message? y/n"
+		footer = errorStyle.Render("delete this message? y/n")
+	} else {
+		footer = footerStyle.Render(footer)
 	}
-	return header + "\n\n" + m.viewport.View() + "\n\n" + footer
+	return header + "\n\n" + m.viewport.View() + "\n" + footer
 }

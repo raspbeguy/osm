@@ -80,9 +80,9 @@ func (m profileModel) View() string {
 		return m.spinner.View() + " loading profile..."
 	}
 	if m.err != nil {
-		return "error: " + m.err.Error() + "\n\nesc to go back"
+		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc to go back")
 	}
-	return m.viewport.View() + "\n\nesc to go back"
+	return m.viewport.View() + "\n" + footerStyle.Render("esc to go back")
 }
 
 func formatUser(u *api.User) string {

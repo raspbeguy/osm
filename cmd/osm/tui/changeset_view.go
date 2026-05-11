@@ -90,18 +90,23 @@ func (m changesetViewModel) View() string {
 		return m.spinner.View() + " loading changeset..."
 	}
 	if m.err != nil {
-		return "error: " + m.err.Error() + "\n\nesc back"
+		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back")
 	}
 	if m.cs == nil {
-		return "no changeset\n\nesc back"
+		return "no changeset\n" + footerStyle.Render("esc back")
 	}
 	closedAt := "(open)"
 	if !m.cs.ClosedAt.IsZero() {
 		closedAt = m.cs.ClosedAt.Format(time.RFC3339)
 	}
-	header := fmt.Sprintf("ID: %d\nUser: %s\nOpen: %v\nCreated: %s\nClosed: %s",
-		m.cs.ID, m.cs.User, m.cs.Open, m.cs.CreatedAt.Format(time.RFC3339), closedAt)
-	return header + "\n\n" + m.viewport.View() + "\n\nesc back"
+	title := m.cs.Comment()
+	if title == "" {
+		title = fmt.Sprintf("changeset %d", m.cs.ID)
+	}
+	header := headerStyle.Render(title) + "\n" +
+		mutedStyle.Render(fmt.Sprintf("id %d • %s • open %v • created %s • closed %s",
+			m.cs.ID, m.cs.User, m.cs.Open, m.cs.CreatedAt.Format(time.RFC3339), closedAt))
+	return header + "\n\n" + m.viewport.View() + "\n" + footerStyle.Render("esc back")
 }
 
 func formatChangesetBody(cs *osm.Changeset) string {

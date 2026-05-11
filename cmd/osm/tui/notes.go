@@ -174,15 +174,18 @@ func (m notesModel) Update(msg tea.Msg) (notesModel, tea.Cmd) {
 func (m notesModel) View() string {
 	switch m.state {
 	case notesStateInput:
-		return "Lookup a note by ID, or query a bbox (l,b,r,t):\n\n" + m.input.View() + "\n\nenter to submit, esc to go back"
+		return headerStyle.Render("Notes lookup") + "\n" +
+			mutedStyle.Render("enter a note ID (e.g. 329125) or a bbox (l,b,r,t)") + "\n\n" +
+			m.input.View() + "\n" +
+			footerStyle.Render("enter submit, esc back")
 	case notesStateLoading:
 		return m.spinner.View() + " loading..."
 	case notesStateError:
-		return "error: " + m.err.Error() + "\n\n/ to new query, esc back"
+		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("/ new query, esc back")
 	case notesStateNote:
-		return m.viewport.View() + "\n\n/ new query, esc back"
+		return m.viewport.View() + "\n" + footerStyle.Render("/ new query, esc back")
 	case notesStateList:
-		return m.list.View() + "\n/ new query, esc back"
+		return m.list.View() + "\n" + footerStyle.Render("/ new query, esc back")
 	}
 	return ""
 }
