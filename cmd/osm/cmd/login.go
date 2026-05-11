@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -16,6 +18,7 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		cfg.OnAuthURL = printAuthInstructions
 		tok, err := auth.Login(cmd.Context(), cfg)
 		if err != nil {
 			return err
@@ -26,6 +29,31 @@ var loginCmd = &cobra.Command{
 		fmt.Println("logged in")
 		return nil
 	},
+}
+
+func printAuthInstructions(u string) {
+	port := callbackPort(u)
+	fmt.Fprintln(os.Stderr, "open this url in a browser to authorize:")
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "   ", u)
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "if you are on a headless host, forward the callback port over ssh from your local machine first:")
+	fmt.Fprintf(os.Stderr, "    ssh -L %s:127.0.0.1:%s <this-host>\n", port, port)
+	fmt.Fprintln(os.Stderr, "waiting for callback (up to 5 minutes)...")
+}
+
+// callbackPort extracts the port from the authorize URL's redirect_uri.
+// Falls back to "17654" (the default) if anything goes wrong.
+func callbackPort(authURL string) string {
+	u, err := url.Parse(authURL)
+	if err != nil {
+		return "17654"
+	}
+	redirect, err := url.Parse(u.Query().Get("redirect_uri"))
+	if err != nil || redirect.Port() == "" {
+		return "17654"
+	}
+	return redirect.Port()
 }
 
 var logoutCmd = &cobra.Command{

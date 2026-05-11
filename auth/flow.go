@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -28,6 +29,16 @@ type Config struct {
 	AuthURL     string
 	TokenURL    string
 	RedirectURI string
+	// OnAuthURL is called once with the authorization URL before the browser
+	// is launched. Useful for headless environments where the URL must be
+	// copied to a browser elsewhere.
+	OnAuthURL func(url string)
+}
+
+// browser.OpenURL writes to its own stderr on some platforms; silence it.
+func init() {
+	browser.Stderr = io.Discard
+	browser.Stdout = io.Discard
 }
 
 var openURL = browser.OpenURL
@@ -116,9 +127,11 @@ func Login(ctx context.Context, cfg Config) (*oauth2.Token, error) {
 	defer srv.Shutdown(context.Background())
 
 	authURL := oc.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
-	if err := openURL(authURL); err != nil {
-		return nil, fmt.Errorf("open browser failed, visit this url manually: %s: %w", authURL, err)
+	if cfg.OnAuthURL != nil {
+		cfg.OnAuthURL(authURL)
 	}
+	// Browser launch is best-effort: headless callers rely on OnAuthURL.
+	_ = openURL(authURL)
 
 	ctx, cancel := context.WithTimeout(ctx, LoginTimeout)
 	defer cancel()
