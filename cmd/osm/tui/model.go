@@ -12,6 +12,7 @@ const (
 	screenMenu screen = iota
 	screenProfile
 	screenInbox
+	screenOutbox
 	screenReader
 )
 
@@ -32,6 +33,7 @@ type rootModel struct {
 	menu    menuModel
 	profile profileModel
 	inbox   messagesModel
+	outbox  messagesModel
 	reader  readerModel
 }
 
@@ -42,6 +44,7 @@ func newRoot(c *api.Client) rootModel {
 		menu:    newMenu(),
 		profile: newProfile(c),
 		inbox:   newMessages(c, dirInbox),
+		outbox:  newMessages(c, dirOutbox),
 		reader:  newReader(c),
 	}
 }
@@ -57,6 +60,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.profile.viewport.Width = msg.Width
 		m.profile.viewport.Height = msg.Height - 4
 		m.inbox.list.SetSize(msg.Width, msg.Height-3)
+		m.outbox.list.SetSize(msg.Width, msg.Height-3)
 		m.reader.viewport.Width = msg.Width
 		m.reader.viewport.Height = msg.Height - 8
 		return m, nil
@@ -99,6 +103,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.profile, cmd = m.profile.Update(msg)
 	case screenInbox:
 		m.inbox, cmd = m.inbox.Update(msg)
+	case screenOutbox:
+		m.outbox, cmd = m.outbox.Update(msg)
 	case screenReader:
 		m.reader, cmd = m.reader.Update(msg)
 	}
@@ -119,6 +125,13 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			return m, cmd
 		}
 		return m, nil
+	case screenOutbox:
+		if msg.refresh || (len(m.outbox.list.Items()) == 0 && !m.outbox.loading) {
+			var cmd tea.Cmd
+			m.outbox, cmd = m.outbox.show()
+			return m, cmd
+		}
+		return m, nil
 	case screenReader:
 		var cmd tea.Cmd
 		m.reader, cmd = m.reader.show(msg.msgID, msg.parent)
@@ -135,6 +148,8 @@ func (m rootModel) View() string {
 		return m.profile.View()
 	case screenInbox:
 		return m.inbox.View()
+	case screenOutbox:
+		return m.outbox.View()
 	case screenReader:
 		return m.reader.View()
 	}

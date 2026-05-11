@@ -127,6 +127,9 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 		case "enter":
 			if sel := m.selected(); sel != nil {
 				parent := screenInbox
+				if m.direction == dirOutbox {
+					parent = screenOutbox
+				}
 				return m, func() tea.Msg {
 					return navigateMsg{to: screenReader, msgID: sel.ID, parent: parent}
 				}
