@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -99,16 +102,21 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.height = msg.Height
-		paneH := msg.Height - 3
+		// Reserve 2 rows for the breadcrumb + spacer rendered by View.
+		availH := msg.Height - 2
+		if availH < 5 {
+			availH = 5
+		}
+		m.height = availH
+		paneH := availH - 3
 		if paneH < 5 {
 			paneH = 5
 		}
 		leftW, rightW := splitWidths(msg.Width)
 
-		m.menu.list.SetSize(msg.Width, msg.Height-2)
+		m.menu.list.SetSize(msg.Width, availH-2)
 		m.profile.viewport.Width = msg.Width
-		m.profile.viewport.Height = msg.Height - 4
+		m.profile.viewport.Height = availH - 4
 
 		m.inbox.list.SetSize(leftW, paneH)
 		m.inbox.viewport.Width = rightW
@@ -117,8 +125,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.outbox.viewport.Width = rightW
 		m.outbox.viewport.Height = paneH
 
-		m.changesets.list.SetSize(msg.Width, msg.Height-3)
-		csH := msg.Height - 8
+		m.changesets.list.SetSize(msg.Width, availH-3)
+		csH := availH - 8
 		if csH < 5 {
 			csH = 5
 		}
@@ -129,15 +137,15 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.csview.detailViewport.Height = csH
 
 		m.notes.viewport.Width = msg.Width
-		m.notes.viewport.Height = msg.Height - 6
-		m.notes.list.SetSize(msg.Width, msg.Height-3)
+		m.notes.viewport.Height = availH - 6
+		m.notes.list.SetSize(msg.Width, availH-3)
 		m.notes.input.Width = msg.Width - 4
 
 		m.doctor.viewport.Width = msg.Width
-		m.doctor.viewport.Height = msg.Height - 2
+		m.doctor.viewport.Height = availH - 2
 
 		m.history.viewport.Width = msg.Width
-		m.history.viewport.Height = msg.Height - 6
+		m.history.viewport.Height = availH - 6
 		m.history.input.Width = msg.Width - 4
 
 		m.traces.list.SetSize(leftW, paneH)
@@ -148,9 +156,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.compose.viewport.Width = rightW
 		m.compose.viewport.Height = paneH
 		m.addElement.input.Width = msg.Width - 4
-		m.editEl.list.SetSize(msg.Width, msg.Height-5)
+		m.editEl.list.SetSize(msg.Width, availH-5)
 		m.editEl.input.Width = msg.Width - 4
-		m.editMembers.list.SetSize(msg.Width, msg.Height-5)
+		m.editMembers.list.SetSize(msg.Width, availH-5)
 		m.editMembers.input.Width = msg.Width - 4
 		m.submit.commentInput.Width = msg.Width - 4
 		m.submit.tagInput.Width = msg.Width - 4
@@ -359,7 +367,57 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 	return m, nil
 }
 
+// breadcrumb returns the navigation trail shown at the top of every screen.
+func (m rootModel) breadcrumb() string {
+	parts := []string{"osm"}
+	switch m.screen {
+	case screenMenu:
+		// just the root
+	case screenProfile:
+		parts = append(parts, "Profile")
+	case screenInbox:
+		parts = append(parts, "Inbox")
+	case screenOutbox:
+		parts = append(parts, "Outbox")
+	case screenChangesets:
+		parts = append(parts, "Changesets")
+	case screenChangesetView:
+		parts = append(parts, "Changesets", fmt.Sprintf("#%d", m.csview.csID))
+	case screenNotes:
+		parts = append(parts, "Notes")
+	case screenDoctor:
+		parts = append(parts, "Server info")
+	case screenHistory:
+		parts = append(parts, "History")
+	case screenTraces:
+		parts = append(parts, "Traces")
+	case screenComposeChangeset:
+		parts = append(parts, "New changeset")
+	case screenAddElement:
+		parts = append(parts, "New changeset", "Add element")
+	case screenEditElement:
+		parts = append(parts, "New changeset", composedElementLabel(&m))
+	case screenEditMembers:
+		parts = append(parts, "New changeset", composedElementLabel(&m), "Members")
+	case screenSubmitChangeset:
+		parts = append(parts, "New changeset", "Submit")
+	}
+	return strings.Join(parts, " › ")
+}
+
+func composedElementLabel(m *rootModel) string {
+	if e := m.compose.selectedStaged(); e != nil {
+		return fmt.Sprintf("Edit %s %d", kindGlyph(e.Kind), e.ID)
+	}
+	return "Edit"
+}
+
 func (m rootModel) View() string {
+	body := m.bodyView()
+	return breadcrumbStyle.Render(m.breadcrumb()) + "\n\n" + body
+}
+
+func (m rootModel) bodyView() string {
 	switch m.screen {
 	case screenMenu:
 		return m.menu.View()

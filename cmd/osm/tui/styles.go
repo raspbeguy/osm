@@ -29,12 +29,13 @@ func newCompactDelegate() list.DefaultDelegate {
 }
 
 var (
-	headerStyle   = lipgloss.NewStyle().Bold(true)
-	footerStyle   = lipgloss.NewStyle().Faint(true).MarginTop(1)
-	errorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-	mutedStyle    = lipgloss.NewStyle().Faint(true)
-	paneFocused   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("12"))
-	paneUnfocused = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("8"))
+	headerStyle     = lipgloss.NewStyle().Bold(true)
+	footerStyle     = lipgloss.NewStyle().Faint(true).MarginTop(1)
+	errorStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+	mutedStyle      = lipgloss.NewStyle().Faint(true)
+	paneFocused     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("12"))
+	paneUnfocused   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("8"))
+	breadcrumbStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true)
 )
 
 // wrapText soft-wraps s to width columns, preserving paragraphs.
