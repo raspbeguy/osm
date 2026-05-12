@@ -1,11 +1,16 @@
 package tui
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/paulmach/osm"
 )
+
+var ansiRE = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string { return ansiRE.ReplaceAllString(s, "") }
 
 func TestFormatTagDiff(t *testing.T) {
 	cur := osm.Tags{
@@ -16,7 +21,7 @@ func TestFormatTagDiff(t *testing.T) {
 		{Key: "amenity", Value: "cafe"},
 		{Key: "phone", Value: "+33 1 23 45"},
 	}
-	got := formatTagDiff(cur, prev)
+	got := stripANSI(formatTagDiff(cur, prev))
 	for _, want := range []string{
 		"~ amenity: cafe → restaurant",
 		"+ cuisine = italian",
@@ -30,7 +35,7 @@ func TestFormatTagDiff(t *testing.T) {
 
 func TestFormatTagDiffNoChange(t *testing.T) {
 	t1 := osm.Tags{{Key: "a", Value: "b"}}
-	if got := formatTagDiff(t1, t1); got != "" {
+	if got := stripANSI(formatTagDiff(t1, t1)); got != "" {
 		t.Errorf("expected empty diff, got %q", got)
 	}
 }

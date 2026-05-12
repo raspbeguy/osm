@@ -367,7 +367,7 @@ func (m changesetViewModel) renderDetail() string {
 	if len(e.Tags) > 0 {
 		sb.WriteString(headerStyle.Render("Tags") + "\n")
 		for _, t := range e.Tags {
-			fmt.Fprintf(&sb, "  %s = %s\n", t.Key, t.Value)
+			sb.WriteString("  " + styledTag(t.Key, t.Value) + "\n")
 		}
 		sb.WriteString("\n")
 	}
@@ -405,14 +405,14 @@ func formatTagDiff(cur, prev osm.Tags) string {
 	for k, v := range curMap {
 		pv, ok := prevMap[k]
 		if !ok {
-			fmt.Fprintf(&sb, "  + %s = %s\n", k, v)
+			sb.WriteString("  + " + styledTag(k, v) + "\n")
 		} else if pv != v {
-			fmt.Fprintf(&sb, "  ~ %s: %s → %s\n", k, pv, v)
+			sb.WriteString("  ~ " + tagKeyStyle.Render(k) + ": " + tagValueStyle.Render(pv) + mutedStyle.Render(" → ") + tagValueStyle.Render(v) + "\n")
 		}
 	}
 	for k, pv := range prevMap {
 		if _, ok := curMap[k]; !ok {
-			fmt.Fprintf(&sb, "  - %s = %s\n", k, pv)
+			sb.WriteString("  - " + styledTag(k, pv) + "\n")
 		}
 	}
 	return sb.String()
@@ -501,7 +501,7 @@ func formatChangesetBody(cs *osm.Changeset) string {
 	var sb strings.Builder
 	sb.WriteString("Tags:\n")
 	for _, t := range cs.Tags {
-		fmt.Fprintf(&sb, "  %s = %s\n", t.Key, t.Value)
+		sb.WriteString("  " + styledTag(t.Key, t.Value) + "\n")
 	}
 	if cs.Discussion != nil && len(cs.Discussion.Comments) > 0 {
 		sb.WriteString("\nComments:\n")

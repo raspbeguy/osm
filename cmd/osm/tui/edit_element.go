@@ -23,7 +23,7 @@ type tagItem struct {
 	t osm.Tag
 }
 
-func (i tagItem) Title() string       { return i.t.Key + " = " + i.t.Value }
+func (i tagItem) Title() string       { return styledTag(i.t.Key, i.t.Value) }
 func (i tagItem) Description() string { return "" }
 func (i tagItem) FilterValue() string { return i.t.Key }
 

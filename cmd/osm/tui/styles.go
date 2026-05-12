@@ -36,7 +36,15 @@ var (
 	paneFocused     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("12"))
 	paneUnfocused   = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("8"))
 	breadcrumbStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12")).Bold(true)
+	tagKeyStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("14"))
+	tagValueStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 )
+
+// styledTag returns "key = value" with subtle colour: cyan key, dim equals,
+// green value. Use everywhere a single OSM tag is displayed.
+func styledTag(key, value string) string {
+	return tagKeyStyle.Render(key) + mutedStyle.Render(" = ") + tagValueStyle.Render(value)
+}
 
 // wrapText soft-wraps s to width columns, preserving paragraphs.
 func wrapText(s string, width int) string {
