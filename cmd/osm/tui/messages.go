@@ -6,7 +6,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/raspbeguy/osm/api"
 )
@@ -28,6 +30,19 @@ func (d messagesDirection) String() string {
 type messagesLoadedMsg struct {
 	direction messagesDirection
 	messages  []*api.Message
+	err       error
+}
+
+type messageBodyLoadedMsg struct {
+	direction messagesDirection
+	id        int64
+	msg       *api.Message
+	err       error
+}
+
+type messageDeletedMsg struct {
+	direction messagesDirection
+	id        int64
 	err       error
 }
 
@@ -53,23 +68,38 @@ func (i messageItem) Description() string {
 func (i messageItem) FilterValue() string { return i.msg.Title }
 
 type messagesModel struct {
-	client    *api.Client
-	direction messagesDirection
-	spinner   spinner.Model
-	list      list.Model
-	err       error
-	loading   bool
+	client      *api.Client
+	direction   messagesDirection
+	spinner     spinner.Model
+	list        list.Model
+	viewport    viewport.Model
+	bodies      map[int64]*api.Message
+	bodyLoading map[int64]bool
+	err         error
+	loading     bool
+	deleting    bool
+	confirming  bool
+	focus       int // 0=list, 1=body
+	lastID      int64
 }
 
 func newMessages(c *api.Client, dir messagesDirection) messagesModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 20)
+	l := list.New(nil, list.NewDefaultDelegate(), 40, 20)
 	l.Title = dir.String()
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
-	return messagesModel{client: c, direction: dir, spinner: s, list: l}
+	return messagesModel{
+		client:      c,
+		direction:   dir,
+		spinner:     s,
+		list:        l,
+		viewport:    viewport.New(40, 20),
+		bodies:      map[int64]*api.Message{},
+		bodyLoading: map[int64]bool{},
+	}
 }
 
 func (m messagesModel) Init() tea.Cmd { return nil }
@@ -77,6 +107,8 @@ func (m messagesModel) Init() tea.Cmd { return nil }
 func (m messagesModel) show() (messagesModel, tea.Cmd) {
 	m.loading = true
 	m.err = nil
+	m.confirming = false
+	m.deleting = false
 	return m, tea.Batch(m.spinner.Tick, m.load())
 }
 
@@ -97,6 +129,45 @@ func (m messagesModel) load() tea.Cmd {
 	}
 }
 
+func (m messagesModel) fetchBody(id int64) tea.Cmd {
+	client := m.client
+	dir := m.direction
+	return func() tea.Msg {
+		msg, err := client.GetMessage(context.Background(), id)
+		return messageBodyLoadedMsg{direction: dir, id: id, msg: msg, err: err}
+	}
+}
+
+func (m messagesModel) deleteAction(id int64) tea.Cmd {
+	client := m.client
+	dir := m.direction
+	return func() tea.Msg {
+		err := client.DeleteMessage(context.Background(), id)
+		return messageDeletedMsg{direction: dir, id: id, err: err}
+	}
+}
+
+func (m messagesModel) currentID() int64 {
+	if i, ok := m.list.SelectedItem().(messageItem); ok {
+		return i.msg.ID
+	}
+	return 0
+}
+
+func (m messagesModel) ensureBody(id int64) tea.Cmd {
+	if id == 0 {
+		return nil
+	}
+	if _, ok := m.bodies[id]; ok {
+		return nil
+	}
+	if m.bodyLoading[id] {
+		return nil
+	}
+	m.bodyLoading[id] = true
+	return tea.Batch(m.spinner.Tick, m.fetchBody(id))
+}
+
 func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case messagesLoadedMsg:
@@ -112,33 +183,114 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 			}
 			m.list.SetItems(items)
 		}
+		id := m.currentID()
+		m.lastID = id
+		cmd := m.ensureBody(id)
+		m = m.rewrap()
+		return m, cmd
+	case messageBodyLoadedMsg:
+		if msg.direction != m.direction {
+			return m, nil
+		}
+		delete(m.bodyLoading, msg.id)
+		if msg.err == nil && msg.msg != nil {
+			m.bodies[msg.id] = msg.msg
+		}
+		m = m.rewrap()
+		return m, nil
+	case messageDeletedMsg:
+		if msg.direction != m.direction {
+			return m, nil
+		}
+		m.deleting = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		items := m.list.Items()
+		for i, it := range items {
+			if mi, ok := it.(messageItem); ok && mi.msg.ID == msg.id {
+				items = append(items[:i], items[i+1:]...)
+				m.list.SetItems(items)
+				break
+			}
+		}
+		delete(m.bodies, msg.id)
+		m = m.rewrap()
 		return m, nil
 	case spinner.TickMsg:
-		if !m.loading {
+		if !m.loading && !m.deleting && len(m.bodyLoading) == 0 {
 			return m, nil
 		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
+		if m.confirming {
+			switch msg.String() {
+			case "y", "Y":
+				id := m.currentID()
+				m.confirming = false
+				if id != 0 {
+					m.deleting = true
+					return m, tea.Batch(m.spinner.Tick, m.deleteAction(id))
+				}
+			case "n", "N", "esc":
+				m.confirming = false
+			}
+			return m, nil
+		}
 		switch msg.String() {
 		case "r":
 			return m.show()
-		case "enter":
-			if sel := m.selected(); sel != nil {
-				parent := screenInbox
-				if m.direction == dirOutbox {
-					parent = screenOutbox
-				}
-				return m, func() tea.Msg {
-					return navigateMsg{to: screenReader, itemID: sel.ID, parent: parent}
-				}
+		case "tab":
+			m.focus = 1 - m.focus
+			return m, nil
+		case "d":
+			if m.direction == dirInbox && m.currentID() != 0 {
+				m.confirming = true
+				return m, nil
 			}
 		}
 	}
+
+	prevID := m.lastID
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	if m.focus == 0 {
+		m.list, cmd = m.list.Update(msg)
+	} else {
+		m.viewport, cmd = m.viewport.Update(msg)
+	}
+	curID := m.currentID()
+	m.lastID = curID
+	var fetchCmd tea.Cmd
+	if curID != 0 && curID != prevID {
+		fetchCmd = m.ensureBody(curID)
+		m = m.rewrap()
+	}
+	return m, tea.Batch(cmd, fetchCmd)
+}
+
+func (m messagesModel) rewrap() messagesModel {
+	id := m.currentID()
+	if id == 0 {
+		m.viewport.SetContent(mutedStyle.Render("(no selection)"))
+		return m
+	}
+	if m.bodyLoading[id] {
+		m.viewport.SetContent(m.spinner.View() + " loading...")
+		return m
+	}
+	msg, ok := m.bodies[id]
+	if !ok {
+		m.viewport.SetContent(mutedStyle.Render("(no body)"))
+		return m
+	}
+	header := headerStyle.Render(msg.Title) + "\n" +
+		mutedStyle.Render(fmt.Sprintf("from %s • to %s • %s", msg.FromUser, msg.ToUser, msg.SentOn))
+	body := header + "\n\n" + msg.Body
+	m.viewport.SetContent(wrapText(body, m.viewport.Width))
+	return m
 }
 
 func (m messagesModel) View() string {
@@ -148,12 +300,25 @@ func (m messagesModel) View() string {
 	if m.err != nil {
 		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back, r retry")
 	}
-	return m.list.View() + "\n" + footerStyle.Render("esc back, enter open, r refresh")
-}
-
-func (m messagesModel) selected() *api.Message {
-	if i, ok := m.list.SelectedItem().(messageItem); ok {
-		return i.msg
+	if len(m.list.Items()) == 0 {
+		return mutedStyle.Render("(no messages)") + "\n" + footerStyle.Render("esc back, r refresh")
 	}
-	return nil
+	leftStyle, rightStyle := paneFocused, paneUnfocused
+	if m.focus == 1 {
+		leftStyle, rightStyle = paneUnfocused, paneFocused
+	}
+	left := leftStyle.Render(m.list.View())
+	right := rightStyle.Render(m.viewport.View())
+	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	footer := "esc back, tab swap pane, r refresh"
+	if m.direction == dirInbox {
+		footer += ", d delete"
+	}
+	if m.confirming {
+		footer = errorStyle.Render("delete this message? y/n")
+	}
+	if m.deleting {
+		footer = m.spinner.View() + " deleting..."
+	}
+	return body + "\n" + footerStyle.Render(footer)
 }

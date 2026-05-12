@@ -13,7 +13,6 @@ const (
 	screenProfile
 	screenInbox
 	screenOutbox
-	screenReader
 	screenChangesets
 	screenChangesetView
 	screenNotes
@@ -25,9 +24,9 @@ const (
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
-// re-load its contents. itemID is the per-screen target id (message id for
-// reader, changeset id for changeset view, element id for item/history view).
-// kind (node|way|relation) selects history's element kind on direct-load.
+// re-load its contents. itemID is the per-screen target id (changeset id for
+// changeset view, element id for history view, etc). kind (node|way|relation)
+// selects history's element kind on direct-load.
 type navigateMsg struct {
 	to      screen
 	itemID  int64
@@ -45,7 +44,6 @@ type rootModel struct {
 	profile    profileModel
 	inbox      messagesModel
 	outbox     messagesModel
-	reader     readerModel
 	changesets changesetsModel
 	csview     changesetViewModel
 	notes      notesModel
@@ -64,7 +62,6 @@ func newRoot(c *api.Client) rootModel {
 		profile:    newProfile(c),
 		inbox:      newMessages(c, dirInbox),
 		outbox:     newMessages(c, dirOutbox),
-		reader:     newReader(c),
 		changesets: newChangesets(c),
 		csview:     newChangesetView(c),
 		notes:      newNotes(c),
@@ -78,37 +75,63 @@ func newRoot(c *api.Client) rootModel {
 
 func (m rootModel) Init() tea.Cmd { return nil }
 
+// splitWidths returns (leftPaneInnerWidth, rightPaneInnerWidth) for a 50/50
+// split given a terminal width. Accounts for 2 borders of 1 char each per pane.
+func splitWidths(total int) (int, int) {
+	usable := total - 4
+	if usable < 8 {
+		usable = 8
+	}
+	l := usable / 2
+	return l, usable - l
+}
+
 func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		paneH := msg.Height - 3
+		if paneH < 5 {
+			paneH = 5
+		}
+		leftW, rightW := splitWidths(msg.Width)
+
 		m.menu.list.SetSize(msg.Width, msg.Height-2)
 		m.profile.viewport.Width = msg.Width
 		m.profile.viewport.Height = msg.Height - 4
-		m.inbox.list.SetSize(msg.Width, msg.Height-3)
-		m.outbox.list.SetSize(msg.Width, msg.Height-3)
-		m.reader.viewport.Width = msg.Width
-		m.reader.viewport.Height = msg.Height - 8
+
+		m.inbox.list.SetSize(leftW, paneH)
+		m.inbox.viewport.Width = rightW
+		m.inbox.viewport.Height = paneH
+		m.outbox.list.SetSize(leftW, paneH)
+		m.outbox.viewport.Width = rightW
+		m.outbox.viewport.Height = paneH
+
 		m.changesets.list.SetSize(msg.Width, msg.Height-3)
 		m.csview.viewport.Width = msg.Width
 		m.csview.viewport.Height = msg.Height - 8
+		m.csview.elementsList.SetSize(msg.Width, msg.Height-8)
+
 		m.notes.viewport.Width = msg.Width
 		m.notes.viewport.Height = msg.Height - 6
 		m.notes.list.SetSize(msg.Width, msg.Height-3)
 		m.notes.input.Width = msg.Width - 4
+
 		m.doctor.viewport.Width = msg.Width
 		m.doctor.viewport.Height = msg.Height - 2
+
 		m.history.viewport.Width = msg.Width
 		m.history.viewport.Height = msg.Height - 6
 		m.history.input.Width = msg.Width - 4
+
 		m.traces.list.SetSize(msg.Width, msg.Height-3)
 		m.traceView.viewport.Width = msg.Width
 		m.traceView.viewport.Height = msg.Height - 8
-		m.csview.elementsList.SetSize(msg.Width, msg.Height-8)
-		// re-wrap any loaded content for the new width
+
 		m.profile = m.profile.rewrap()
-		m.reader = m.reader.rewrap()
+		m.inbox = m.inbox.rewrap()
+		m.outbox = m.outbox.rewrap()
 		m.csview = m.csview.rewrap()
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
@@ -122,15 +145,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.screen {
 			case screenMenu:
 				return m, tea.Quit
-			case screenReader:
-				if m.reader.confirming {
-					break // let reader handle the cancel
+			case screenInbox, screenOutbox:
+				if m.activeMessages().confirming {
+					break
 				}
-				dest := m.reader.parent
-				if dest == 0 {
-					dest = screenMenu
-				}
-				m.screen = dest
+				m.screen = screenMenu
 				return m, nil
 			case screenChangesetView:
 				m.screen = screenChangesets
@@ -164,8 +183,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.inbox, cmd = m.inbox.Update(msg)
 	case screenOutbox:
 		m.outbox, cmd = m.outbox.Update(msg)
-	case screenReader:
-		m.reader, cmd = m.reader.Update(msg)
 	case screenChangesets:
 		m.changesets, cmd = m.changesets.Update(msg)
 	case screenChangesetView:
@@ -184,6 +201,13 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.itemView, cmd = m.itemView.Update(msg)
 	}
 	return m, cmd
+}
+
+func (m rootModel) activeMessages() messagesModel {
+	if m.screen == screenOutbox {
+		return m.outbox
+	}
+	return m.inbox
 }
 
 func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
@@ -207,10 +231,6 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			return m, cmd
 		}
 		return m, nil
-	case screenReader:
-		var cmd tea.Cmd
-		m.reader, cmd = m.reader.show(msg.itemID, msg.parent)
-		return m, cmd
 	case screenChangesets:
 		if msg.refresh || (len(m.changesets.list.Items()) == 0 && !m.changesets.loading) {
 			var cmd tea.Cmd
@@ -266,8 +286,6 @@ func (m rootModel) View() string {
 		return m.inbox.View()
 	case screenOutbox:
 		return m.outbox.View()
-	case screenReader:
-		return m.reader.View()
 	case screenChangesets:
 		return m.changesets.View()
 	case screenChangesetView:
