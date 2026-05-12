@@ -135,15 +135,15 @@ func (m changesetViewModel) show(id int64) (changesetViewModel, tea.Cmd) {
 	m.err = nil
 	m.cs = nil
 	m.xml = ""
-	m.xmlLoading = false
+	m.xmlLoading = true
 	m.elements = nil
 	m.elementsList.SetItems(nil)
-	m.mode = csModeSummary
+	m.mode = csModeElements
 	m.focus = 0
 	m.lastSelKey = ""
 	m.prevCache = map[string]*prevElement{}
 	m.prevLoading = map[string]bool{}
-	return m, tea.Batch(m.spinner.Tick, m.load())
+	return m, tea.Batch(m.spinner.Tick, m.load(), m.loadXML())
 }
 
 func (m changesetViewModel) load() tea.Cmd {
