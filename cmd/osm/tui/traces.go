@@ -30,7 +30,7 @@ func (i traceItem) Title() string {
 
 func (i traceItem) Description() string { return "" }
 
-func (i traceItem) FilterValue() string { return i.t.Description }
+func (i traceItem) FilterValue() string { return i.Title() }
 
 type tracesLoadedMsg struct {
 	traces []*api.Trace
@@ -64,7 +64,7 @@ func newTraces(c *api.Client) tracesModel {
 	l.Title = "Traces"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	return tracesModel{
 		client:      c,
 		spinner:     s,
@@ -158,17 +158,19 @@ func (m tracesModel) Update(msg tea.Msg) (tracesModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "r":
-			return m.show()
-		case "tab":
-			m.focus = 1 - m.focus
-			return m, nil
-		case "d":
-			m.showData = !m.showData
-			cmd := m.ensureData(m.currentID())
-			m = m.rewrap()
-			return m, cmd
+		if m.list.FilterState() != list.Filtering {
+			switch msg.String() {
+			case "r":
+				return m.show()
+			case "tab":
+				m.focus = 1 - m.focus
+				return m, nil
+			case "d":
+				m.showData = !m.showData
+				cmd := m.ensureData(m.currentID())
+				m = m.rewrap()
+				return m, cmd
+			}
 		}
 	}
 

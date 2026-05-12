@@ -174,19 +174,40 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.screen {
 			case screenMenu:
 				return m, tea.Quit
-			case screenInbox, screenOutbox:
-				if m.activeMessages().confirming {
+			case screenInbox:
+				if m.inbox.confirming || m.inbox.list.FilterState() != list.Unfiltered {
+					break
+				}
+				m.screen = screenMenu
+				return m, nil
+			case screenOutbox:
+				if m.outbox.confirming || m.outbox.list.FilterState() != list.Unfiltered {
 					break
 				}
 				m.screen = screenMenu
 				return m, nil
 			case screenChangesets:
 				if m.changesets.list.FilterState() != list.Unfiltered {
-					break // let the list cancel/clear the filter
+					break
+				}
+				m.screen = screenMenu
+				return m, nil
+			case screenTraces:
+				if m.traces.list.FilterState() != list.Unfiltered {
+					break
+				}
+				m.screen = screenMenu
+				return m, nil
+			case screenComposeChangeset:
+				if m.compose.list.FilterState() != list.Unfiltered {
+					break
 				}
 				m.screen = screenMenu
 				return m, nil
 			case screenChangesetView:
+				if m.csview.mode == csModeElements && m.csview.elementsList.FilterState() != list.Unfiltered {
+					break
+				}
 				m.screen = screenChangesets
 				return m, nil
 			case screenAddElement, screenEditElement, screenSubmitChangeset:

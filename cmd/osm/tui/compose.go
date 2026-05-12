@@ -58,6 +58,7 @@ func (i stagedItem) Description() string { return "" }
 
 func (i stagedItem) FilterValue() string { return i.Title() }
 
+
 type composeChangesetModel struct {
 	client   *api.Client
 	list     list.Model
@@ -73,7 +74,7 @@ func newCompose(c *api.Client) composeChangesetModel {
 	l.Title = "New changeset"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	return composeChangesetModel{client: c, list: l, viewport: viewport.New(40, 20), lastIdx: -1}
 }
 
@@ -115,6 +116,9 @@ func (m composeChangesetModel) selectedStaged() *stagedElement {
 func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.list.FilterState() == list.Filtering {
+			break
+		}
 		switch msg.String() {
 		case "a":
 			return m, func() tea.Msg {

@@ -79,6 +79,7 @@ func (i csElementItem) Description() string { return "" }
 
 func (i csElementItem) FilterValue() string { return i.Title() }
 
+
 type changesetViewModel struct {
 	client         *api.Client
 	csID           osm.ChangesetID
@@ -106,7 +107,7 @@ func newChangesetView(c *api.Client) changesetViewModel {
 	l.Title = "Elements"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	return changesetViewModel{
 		client:         c,
 		spinner:        s,
@@ -269,7 +270,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		if m.cs != nil {
+		if m.cs != nil && m.elementsList.FilterState() != list.Filtering {
 			switch msg.String() {
 			case "s":
 				m.mode = csModeSummary

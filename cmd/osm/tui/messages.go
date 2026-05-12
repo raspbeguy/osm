@@ -64,7 +64,7 @@ func (i messageItem) Title() string {
 
 func (i messageItem) Description() string { return "" }
 
-func (i messageItem) FilterValue() string { return i.msg.Title }
+func (i messageItem) FilterValue() string { return i.Title() }
 
 type messagesModel struct {
 	client      *api.Client
@@ -89,7 +89,7 @@ func newMessages(c *api.Client, dir messagesDirection) messagesModel {
 	l.Title = dir.String()
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	return messagesModel{
 		client:      c,
 		direction:   dir,
@@ -239,16 +239,18 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 			}
 			return m, nil
 		}
-		switch msg.String() {
-		case "r":
-			return m.show()
-		case "tab":
-			m.focus = 1 - m.focus
-			return m, nil
-		case "d":
-			if m.direction == dirInbox && m.currentID() != 0 {
-				m.confirming = true
+		if m.list.FilterState() != list.Filtering {
+			switch msg.String() {
+			case "r":
+				return m.show()
+			case "tab":
+				m.focus = 1 - m.focus
 				return m, nil
+			case "d":
+				if m.direction == dirInbox && m.currentID() != 0 {
+					m.confirming = true
+					return m, nil
+				}
 			}
 		}
 	}
