@@ -58,13 +58,14 @@ func (i stagedItem) Description() string { return "" }
 func (i stagedItem) FilterValue() string { return i.Title() }
 
 type composeChangesetModel struct {
-	client   *api.Client
-	list     list.Model
-	viewport viewport.Model
-	staged   []*stagedElement
-	err      error
-	focus    int // 0=list, 1=detail
-	lastIdx  int
+	client          *api.Client
+	list            list.Model
+	viewport        viewport.Model
+	staged          []*stagedElement
+	err             error
+	focus           int // 0=list, 1=detail
+	lastIdx         int
+	clearConfirming bool
 }
 
 func newCompose(c *api.Client) composeChangesetModel {
@@ -114,6 +115,20 @@ func (m composeChangesetModel) selectedStaged() *stagedElement {
 func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.clearConfirming {
+			switch msg.String() {
+			case "y", "Y":
+				m.staged = nil
+				m.refreshList()
+				m = m.rewrap()
+				m.clearConfirming = false
+				return m, nil
+			case "n", "N", "esc":
+				m.clearConfirming = false
+				return m, nil
+			}
+			return m, nil
+		}
 		if m.list.FilterState() == list.Filtering {
 			break
 		}
@@ -146,9 +161,10 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 			}
 			return m, nil
 		case "c":
-			m.staged = nil
-			m.refreshList()
-			m = m.rewrap()
+			if len(m.staged) == 0 {
+				return m, nil
+			}
+			m.clearConfirming = true
 			return m, nil
 		case "tab":
 			m.focus = 1 - m.focus
@@ -181,7 +197,9 @@ func (m composeChangesetModel) View() string {
 	if len(m.staged) > 0 {
 		footer = "esc back, tab swap pane, a add, n new relation, enter edit, d drop, c clear, s submit"
 	}
-	if m.err != nil {
+	if m.clearConfirming {
+		footer = errorStyle.Render("clear all staged changes? y/n")
+	} else if m.err != nil {
 		footer = errorStyle.Render(m.err.Error()) + " - " + footer
 	}
 	if len(m.staged) == 0 {

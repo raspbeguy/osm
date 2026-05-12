@@ -29,9 +29,7 @@ type changesetSubmittedMsg struct {
 	err  error
 }
 
-type submitConfirmedMsg struct {
-	csID osm.ChangesetID
-}
+type submitConfirmedMsg struct{}
 
 type submitTagItem struct{ t osm.Tag }
 
@@ -117,7 +115,7 @@ func (m submitChangesetModel) Update(msg tea.Msg) (submitChangesetModel, tea.Cmd
 			return m, nil
 		case submitDone:
 			if msg.String() == "enter" && m.err == nil {
-				return m, func() tea.Msg { return submitConfirmedMsg{csID: m.resultID} }
+				return m, func() tea.Msg { return submitConfirmedMsg{} }
 			}
 			return m, nil
 		case submitAddingTag:

@@ -72,13 +72,7 @@ func (m addElementModel) submit() tea.Cmd {
 	}
 }
 
-var errParseAddElement = parseAddElementError{}
-
-type parseAddElementError struct{}
-
-func (parseAddElementError) Error() string {
-	return "expected: node|way|relation <id>"
-}
+var errParseAddElement = errors.New("expected: node|way|relation <id>")
 
 func (m addElementModel) Update(msg tea.Msg) (addElementModel, tea.Cmd) {
 	switch msg := msg.(type) {

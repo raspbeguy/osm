@@ -71,9 +71,13 @@ func runEditTag(cmd *cobra.Command, args []string) error {
 			_, err = c.ModifyRelation(cmd.Context(), csID, r)
 			return err
 		default:
-			return fmt.Errorf("unknown element kind %q (want node, way, or relation)", kind)
+			return errUnknownKind(kind)
 		}
 	})
+}
+
+func errUnknownKind(kind string) error {
+	return fmt.Errorf("unknown element kind %q (want node, way, or relation)", kind)
 }
 
 func runEditDelete(cmd *cobra.Command, args []string) error {
@@ -110,7 +114,7 @@ func runEditDelete(cmd *cobra.Command, args []string) error {
 			_, err = c.DeleteRelation(cmd.Context(), csID, r)
 			return err
 		default:
-			return fmt.Errorf("unknown element kind %q", kind)
+			return errUnknownKind(kind)
 		}
 	})
 }

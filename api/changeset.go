@@ -82,6 +82,9 @@ type ChangesetFilter struct {
 }
 
 func (c *Client) ListChangesets(ctx context.Context, f ChangesetFilter) ([]*osm.Changeset, error) {
+	if f.OnlyOpen && f.OnlyClosed {
+		return nil, errors.New("ChangesetFilter.OnlyOpen and OnlyClosed are mutually exclusive")
+	}
 	q := url.Values{}
 	switch {
 	case f.UserID > 0:

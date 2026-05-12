@@ -29,6 +29,7 @@ func (i changesetItem) FilterValue() string { return i.Title() }
 
 type changesetsLoadedMsg struct {
 	changesets []*osm.Changeset
+	userID     int64 // populated when load() resolved the user this turn
 	err        error
 }
 
@@ -38,6 +39,7 @@ type changesetsModel struct {
 	list    list.Model
 	err     error
 	loading bool
+	userID  int64 // cached after first successful Whoami
 }
 
 func newChangesets(c *api.Client) changesetsModel {
@@ -61,13 +63,18 @@ func (m changesetsModel) show() (changesetsModel, tea.Cmd) {
 
 func (m changesetsModel) load() tea.Cmd {
 	client := m.client
+	cached := m.userID
 	return func() tea.Msg {
-		u, err := client.Whoami(programCtx)
-		if err != nil {
-			return changesetsLoadedMsg{err: err}
+		uid := cached
+		if uid == 0 {
+			u, err := client.Whoami(programCtx)
+			if err != nil {
+				return changesetsLoadedMsg{err: err}
+			}
+			uid = u.ID
 		}
-		css, err := client.ListChangesets(programCtx, api.ChangesetFilter{UserID: u.ID})
-		return changesetsLoadedMsg{changesets: css, err: err}
+		css, err := client.ListChangesets(programCtx, api.ChangesetFilter{UserID: uid})
+		return changesetsLoadedMsg{changesets: css, userID: uid, err: err}
 	}
 }
 
@@ -76,6 +83,9 @@ func (m changesetsModel) Update(msg tea.Msg) (changesetsModel, tea.Cmd) {
 	case changesetsLoadedMsg:
 		m.loading = false
 		m.err = msg.err
+		if msg.userID != 0 {
+			m.userID = msg.userID
+		}
 		if msg.err == nil {
 			items := make([]list.Item, len(msg.changesets))
 			for i, x := range msg.changesets {

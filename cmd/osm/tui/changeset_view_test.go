@@ -40,6 +40,50 @@ func TestFormatTagDiffNoChange(t *testing.T) {
 	}
 }
 
+func TestExtractChangesetElements(t *testing.T) {
+	in := `<?xml version="1.0"?>
+<osmChange version="0.6">
+  <create>
+    <node id="-1" version="0" lat="48.5" lon="6.9">
+      <tag k="amenity" v="pharmacy"/>
+    </node>
+    <way id="-2" version="0">
+      <nd ref="-1"/>
+      <nd ref="123"/>
+      <tag k="highway" v="footway"/>
+    </way>
+  </create>
+  <modify>
+    <relation id="99" version="3">
+      <member type="way" ref="-2" role="outer"/>
+      <tag k="type" v="multipolygon"/>
+    </relation>
+  </modify>
+  <delete>
+    <node id="555" version="2"/>
+  </delete>
+</osmChange>`
+	elems, err := extractChangesetElements(in)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(elems) != 4 {
+		t.Fatalf("got %d elements, want 4", len(elems))
+	}
+	if elems[0].Kind != "node" || elems[0].Action != '+' || elems[0].Lat != 48.5 {
+		t.Errorf("first: %+v", elems[0])
+	}
+	if elems[1].Kind != "way" || len(elems[1].Nodes) != 2 || elems[1].Nodes[0] != -1 {
+		t.Errorf("way: %+v", elems[1])
+	}
+	if elems[2].Kind != "relation" || elems[2].Action != '~' || len(elems[2].Members) != 1 || elems[2].Members[0].Role != "outer" {
+		t.Errorf("rel: %+v", elems[2])
+	}
+	if elems[3].Action != '-' || elems[3].ID != 555 {
+		t.Errorf("delete: %+v", elems[3])
+	}
+}
+
 func TestNonTagChanged(t *testing.T) {
 	tests := []struct {
 		name string

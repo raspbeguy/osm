@@ -5,17 +5,21 @@ package osmchange
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 
 	"github.com/paulmach/osm"
 )
+
+// ErrNilChange is returned by Marshal when given a nil *osm.Change.
+var ErrNilChange = errors.New("nil change")
 
 // Marshal returns an osmChange XML document. Every element gets the given
 // changeset ID stamped onto it, since the API rejects uploads with mismatched
 // or missing changeset attributes.
 func Marshal(changesetID osm.ChangesetID, ch *osm.Change) ([]byte, error) {
 	if ch == nil {
-		return nil, fmt.Errorf("nil change")
+		return nil, ErrNilChange
 	}
 	stamp(changesetID, ch.Create)
 	stamp(changesetID, ch.Modify)
