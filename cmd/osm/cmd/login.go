@@ -26,6 +26,9 @@ var loginCmd = &cobra.Command{
 		if err := auth.SaveToken(tok); err != nil {
 			return err
 		}
+		if err := auth.SaveConfig(&auth.PersistedConfig{ClientID: cfg.ClientID}); err != nil {
+			fmt.Fprintf(os.Stderr, "warn: persist client id: %v\n", err)
+		}
 		fmt.Println("logged in")
 		return nil
 	},

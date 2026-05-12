@@ -68,7 +68,10 @@ func clientID() (string, error) {
 	if e := os.Getenv("OSM_CLIENT_ID"); e != "" {
 		return e, nil
 	}
-	return "", errors.New("no oauth2 client id; pass --client-id or set OSM_CLIENT_ID (register an app at https://www.openstreetmap.org/oauth2/applications)")
+	if c, err := auth.LoadConfig(); err == nil && c.ClientID != "" {
+		return c.ClientID, nil
+	}
+	return "", errors.New("no oauth2 client id; pass --client-id, set OSM_CLIENT_ID, or run `osm login` once with one of those to persist it (register an app at https://www.openstreetmap.org/oauth2/applications)")
 }
 
 func authConfig() (auth.Config, error) {
