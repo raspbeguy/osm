@@ -36,7 +36,7 @@ type editElementModel struct {
 }
 
 func newEditElement() editElementModel {
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 20)
+	l := list.New(nil, newCompactDelegate(), 60, 20)
 	l.Title = "Tags"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

@@ -60,7 +60,7 @@ func newSubmit(c *api.Client) submitChangesetModel {
 	ti := textinput.New()
 	ti.Placeholder = "key=value"
 	ti.CharLimit = 200
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 10)
+	l := list.New(nil, newCompactDelegate(), 60, 10)
 	l.Title = "Additional tags"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

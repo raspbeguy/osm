@@ -1,6 +1,18 @@
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/lipgloss"
+)
+
+// newCompactDelegate returns a list delegate that renders each item on a
+// single line: title only, no description, no inter-item spacing.
+func newCompactDelegate() list.DefaultDelegate {
+	d := list.NewDefaultDelegate()
+	d.ShowDescription = false
+	d.SetSpacing(0)
+	return d
+}
 
 var (
 	headerStyle   = lipgloss.NewStyle().Bold(true)

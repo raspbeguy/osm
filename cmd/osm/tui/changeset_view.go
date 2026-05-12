@@ -75,16 +75,7 @@ func (i csElementItem) Title() string {
 	return fmt.Sprintf("%c %s %d v%d", i.e.Action, i.e.Kind, i.e.ID, i.e.Version)
 }
 
-func (i csElementItem) Description() string {
-	if len(i.e.Tags) == 0 {
-		return "(no tags)"
-	}
-	parts := make([]string, 0, len(i.e.Tags))
-	for _, t := range i.e.Tags {
-		parts = append(parts, t.Key+"="+t.Value)
-	}
-	return strings.Join(parts, ", ")
-}
+func (i csElementItem) Description() string { return "" }
 
 func (i csElementItem) FilterValue() string { return i.Title() }
 
@@ -111,7 +102,7 @@ type changesetViewModel struct {
 func newChangesetView(c *api.Client) changesetViewModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 40, 20)
+	l := list.New(nil, newCompactDelegate(), 40, 20)
 	l.Title = "Elements"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

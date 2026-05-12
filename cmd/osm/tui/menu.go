@@ -31,7 +31,7 @@ func newMenu() menuModel {
 		menuItem{name: "Server info", desc: "capabilities and permissions", target: screenDoctor},
 		menuItem{name: "Create changeset", desc: "stage edits and submit a new changeset", target: screenComposeChangeset},
 	}
-	l := list.New(items, list.NewDefaultDelegate(), 40, 20)
+	l := list.New(items, newCompactDelegate(), 40, 20)
 	l.Title = "osm tui"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

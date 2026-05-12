@@ -54,16 +54,7 @@ func (i stagedItem) Title() string {
 	return fmt.Sprintf("%s %s %d", sign, i.e.Kind, i.e.ID)
 }
 
-func (i stagedItem) Description() string {
-	if len(i.e.Tags) == 0 {
-		return "(no tags)"
-	}
-	parts := make([]string, 0, len(i.e.Tags))
-	for _, t := range i.e.Tags {
-		parts = append(parts, t.Key+"="+t.Value)
-	}
-	return strings.Join(parts, ", ")
-}
+func (i stagedItem) Description() string { return "" }
 
 func (i stagedItem) FilterValue() string { return i.Title() }
 
@@ -78,7 +69,7 @@ type composeChangesetModel struct {
 }
 
 func newCompose(c *api.Client) composeChangesetModel {
-	l := list.New(nil, list.NewDefaultDelegate(), 40, 20)
+	l := list.New(nil, newCompactDelegate(), 40, 20)
 	l.Title = "New changeset"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

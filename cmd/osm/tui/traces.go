@@ -21,16 +21,14 @@ func (i traceItem) Title() string {
 	if desc == "" {
 		desc = i.t.Name
 	}
-	return fmt.Sprintf("%d  %s", i.t.ID, desc)
-}
-
-func (i traceItem) Description() string {
 	date := i.t.Timestamp
 	if len(date) >= 10 {
 		date = date[:10]
 	}
-	return fmt.Sprintf("%s  [%s]", date, i.t.Visibility)
+	return fmt.Sprintf("%s  %d  [%s]  %s", date, i.t.ID, i.t.Visibility, desc)
 }
+
+func (i traceItem) Description() string { return "" }
 
 func (i traceItem) FilterValue() string { return i.t.Description }
 
@@ -62,7 +60,7 @@ type tracesModel struct {
 func newTraces(c *api.Client) tracesModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 40, 20)
+	l := list.New(nil, newCompactDelegate(), 40, 20)
 	l.Title = "Traces"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

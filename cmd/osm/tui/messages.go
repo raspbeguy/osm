@@ -55,15 +55,14 @@ func (i messageItem) Title() string {
 	if who == "" {
 		who = i.msg.ToUser
 	}
-	return fmt.Sprintf("%s  %s", who, i.msg.Title)
+	date := i.msg.SentOn
+	if len(date) >= 10 {
+		date = date[:10]
+	}
+	return fmt.Sprintf("%s  %s  %s", date, who, i.msg.Title)
 }
 
-func (i messageItem) Description() string {
-	if len(i.msg.SentOn) >= 10 {
-		return i.msg.SentOn[:10]
-	}
-	return i.msg.SentOn
-}
+func (i messageItem) Description() string { return "" }
 
 func (i messageItem) FilterValue() string { return i.msg.Title }
 
@@ -86,7 +85,7 @@ type messagesModel struct {
 func newMessages(c *api.Client, dir messagesDirection) messagesModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 40, 20)
+	l := list.New(nil, newCompactDelegate(), 40, 20)
 	l.Title = dir.String()
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

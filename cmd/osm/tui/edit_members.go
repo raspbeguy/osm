@@ -42,7 +42,7 @@ type editMembersModel struct {
 }
 
 func newEditMembers() editMembersModel {
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 20)
+	l := list.New(nil, newCompactDelegate(), 60, 20)
 	l.Title = "Members"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

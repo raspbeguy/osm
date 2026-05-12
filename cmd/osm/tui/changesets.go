@@ -21,12 +21,10 @@ func (i changesetItem) Title() string {
 	if c == "" {
 		c = "(no comment)"
 	}
-	return fmt.Sprintf("%d  %s", i.cs.ID, c)
+	return fmt.Sprintf("%s  %d  %s  %s", i.cs.CreatedAt.Format("2006-01-02"), i.cs.ID, i.cs.User, c)
 }
 
-func (i changesetItem) Description() string {
-	return i.cs.CreatedAt.Format("2006-01-02") + "  " + i.cs.User
-}
+func (i changesetItem) Description() string { return "" }
 
 func (i changesetItem) FilterValue() string { return i.cs.Comment() }
 
@@ -46,7 +44,7 @@ type changesetsModel struct {
 func newChangesets(c *api.Client) changesetsModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 20)
+	l := list.New(nil, newCompactDelegate(), 60, 20)
 	l.Title = "Your changesets"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)

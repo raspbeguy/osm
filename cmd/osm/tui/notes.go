@@ -34,15 +34,14 @@ type noteLoadedMsg struct {
 type noteItem struct{ n *api.Note }
 
 func (i noteItem) Title() string {
-	return fmt.Sprintf("%d  [%s]", i.n.ID, i.n.Status)
+	preview := ""
+	if len(i.n.Comments) > 0 {
+		preview = "  " + i.n.Comments[0].Text
+	}
+	return fmt.Sprintf("%d  [%s]%s", i.n.ID, i.n.Status, preview)
 }
 
-func (i noteItem) Description() string {
-	if len(i.n.Comments) > 0 {
-		return i.n.Comments[0].Text
-	}
-	return "(no comment)"
-}
+func (i noteItem) Description() string { return "" }
 
 func (i noteItem) FilterValue() string { return strconv.FormatInt(i.n.ID, 10) }
 
@@ -71,7 +70,7 @@ func newNotes(c *api.Client) notesModel {
 	ti.Width = 60
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	l := list.New(nil, list.NewDefaultDelegate(), 60, 20)
+	l := list.New(nil, newCompactDelegate(), 60, 20)
 	l.Title = "Notes"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
