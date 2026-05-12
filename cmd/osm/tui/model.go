@@ -218,6 +218,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 				m.screen = screenChangesets
+				if len(m.changesets.list.Items()) == 0 && !m.changesets.loading {
+					var cmd tea.Cmd
+					m.changesets, cmd = m.changesets.show()
+					return m, cmd
+				}
 				return m, nil
 			case screenAddElement, screenEditElement, screenSubmitChangeset:
 				m.screen = screenComposeChangeset
