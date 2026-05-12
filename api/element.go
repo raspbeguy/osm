@@ -12,6 +12,34 @@ import (
 	"github.com/paulmach/osm"
 )
 
+// getOne fetches the OSM XML at path and returns the first element from the
+// slice produced by pick. ErrNotFound on empty.
+func getOne[T any, S ~[]*T](c *Client, ctx context.Context, path string, pick func(*osm.OSM) S) (*T, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, path, &wrap); err != nil {
+		return nil, err
+	}
+	items := pick(&wrap)
+	if len(items) == 0 {
+		return nil, ErrNotFound
+	}
+	return items[0], nil
+}
+
+// getAll fetches the OSM XML at path and returns the non-empty slice produced
+// by pick. ErrNotFound on empty (used by element history endpoints).
+func getAll[T any, S ~[]*T](c *Client, ctx context.Context, path string, pick func(*osm.OSM) S) ([]*T, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, path, &wrap); err != nil {
+		return nil, err
+	}
+	items := pick(&wrap)
+	if len(items) == 0 {
+		return nil, ErrNotFound
+	}
+	return items, nil
+}
+
 // GetNodes fetches multiple nodes in one request. Order matches the response,
 // not the input.
 func (c *Client) GetNodes(ctx context.Context, ids []osm.NodeID) ([]*osm.Node, error) {
@@ -60,102 +88,39 @@ func (c *Client) GetRelations(ctx context.Context, ids []osm.RelationID) ([]*osm
 }
 
 func (c *Client) GetNodeVersion(ctx context.Context, id osm.NodeID, version int) (*osm.Node, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/node/%d/%d", id, version), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Nodes) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Nodes[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/node/%d/%d", id, version), func(o *osm.OSM) osm.Nodes { return o.Nodes })
 }
 
 func (c *Client) GetWayVersion(ctx context.Context, id osm.WayID, version int) (*osm.Way, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/way/%d/%d", id, version), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Ways) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Ways[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/way/%d/%d", id, version), func(o *osm.OSM) osm.Ways { return o.Ways })
 }
 
 func (c *Client) GetRelationVersion(ctx context.Context, id osm.RelationID, version int) (*osm.Relation, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/relation/%d/%d", id, version), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Relations) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Relations[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/relation/%d/%d", id, version), func(o *osm.OSM) osm.Relations { return o.Relations })
 }
 
 func (c *Client) NodeHistory(ctx context.Context, id osm.NodeID) ([]*osm.Node, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/node/%d/history", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Nodes) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Nodes, nil
+	return getAll(c, ctx, fmt.Sprintf("/node/%d/history", id), func(o *osm.OSM) osm.Nodes { return o.Nodes })
 }
 
 func (c *Client) WayHistory(ctx context.Context, id osm.WayID) ([]*osm.Way, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/way/%d/history", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Ways) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Ways, nil
+	return getAll(c, ctx, fmt.Sprintf("/way/%d/history", id), func(o *osm.OSM) osm.Ways { return o.Ways })
 }
 
 func (c *Client) RelationHistory(ctx context.Context, id osm.RelationID) ([]*osm.Relation, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/relation/%d/history", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Relations) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Relations, nil
+	return getAll(c, ctx, fmt.Sprintf("/relation/%d/history", id), func(o *osm.OSM) osm.Relations { return o.Relations })
 }
 
 func (c *Client) GetNode(ctx context.Context, id osm.NodeID) (*osm.Node, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/node/%d", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Nodes) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Nodes[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/node/%d", id), func(o *osm.OSM) osm.Nodes { return o.Nodes })
 }
 
 func (c *Client) GetWay(ctx context.Context, id osm.WayID) (*osm.Way, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/way/%d", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Ways) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Ways[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/way/%d", id), func(o *osm.OSM) osm.Ways { return o.Ways })
 }
 
 func (c *Client) GetRelation(ctx context.Context, id osm.RelationID) (*osm.Relation, error) {
-	var wrap osm.OSM
-	if err := c.getXML(ctx, fmt.Sprintf("/relation/%d", id), &wrap); err != nil {
-		return nil, err
-	}
-	if len(wrap.Relations) == 0 {
-		return nil, ErrNotFound
-	}
-	return wrap.Relations[0], nil
+	return getOne(c, ctx, fmt.Sprintf("/relation/%d", id), func(o *osm.OSM) osm.Relations { return o.Relations })
 }
 
 func (c *Client) ModifyNode(ctx context.Context, csID osm.ChangesetID, n *osm.Node) (int, error) {
