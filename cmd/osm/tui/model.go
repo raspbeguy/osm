@@ -203,6 +203,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.elem != nil {
 			m.compose.staged = append(m.compose.staged, msg.elem)
 			m.compose.refreshList()
+			m.compose.list.Select(len(m.compose.staged) - 1)
+			m.compose = m.compose.rewrap()
 		}
 		m.screen = screenComposeChangeset
 		return m, nil
