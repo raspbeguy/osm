@@ -15,11 +15,15 @@ import (
 // runs at most once per process.
 var programCtx context.Context = context.Background()
 
-// Run starts the TUI program against the given API client and returns when the
-// user quits or the context is cancelled.
-func Run(ctx context.Context, c *api.Client) error {
+// Run starts the TUI program. args is the optional deep-link target (see
+// startAt) that decides which screen to open on launch.
+func Run(ctx context.Context, c *api.Client, args []string) error {
+	startCmd, err := startAt(args)
+	if err != nil {
+		return err
+	}
 	programCtx = ctx
-	p := tea.NewProgram(newRoot(c), tea.WithContext(ctx), tea.WithAltScreen())
-	_, err := p.Run()
+	p := tea.NewProgram(newRoot(c, startCmd), tea.WithContext(ctx), tea.WithAltScreen())
+	_, err = p.Run()
 	return err
 }

@@ -43,6 +43,7 @@ type navigateMsg struct {
 
 type rootModel struct {
 	client      *api.Client
+	startCmd    tea.Cmd
 	width       int
 	height      int
 	screen      screen
@@ -63,9 +64,10 @@ type rootModel struct {
 	submit      submitChangesetModel
 }
 
-func newRoot(c *api.Client) rootModel {
+func newRoot(c *api.Client, startCmd tea.Cmd) rootModel {
 	return rootModel{
 		client:      c,
+		startCmd:    startCmd,
 		screen:      screenMenu,
 		menu:        newMenu(),
 		profile:     newProfile(c),
@@ -85,7 +87,7 @@ func newRoot(c *api.Client) rootModel {
 	}
 }
 
-func (m rootModel) Init() tea.Cmd { return nil }
+func (m rootModel) Init() tea.Cmd { return m.startCmd }
 
 // splitWidths returns (leftPaneInnerWidth, rightPaneInnerWidth) for a 50/50
 // split given a terminal width. Accounts for 2 borders of 1 char each per pane.
