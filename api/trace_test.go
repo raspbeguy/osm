@@ -6,6 +6,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -41,6 +42,35 @@ func TestGetTrace(t *testing.T) {
 	}
 	if tr.ID != 42 || tr.Visibility != "public" {
 		t.Errorf("got %+v", tr)
+	}
+}
+
+func TestGetTraceDataRedirect(t *testing.T) {
+	var s3Hit bool
+	s3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s3Hit = true
+		if got := r.Header.Get("Authorization"); got != "" {
+			t.Errorf("auth header leaked to redirect target: %q", got)
+		}
+		io.WriteString(w, "<gpx>blob</gpx>")
+	}))
+	t.Cleanup(s3.Close)
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/gpx/42/data" {
+			t.Errorf("path=%s", r.URL.Path)
+		}
+		w.Header().Set("Location", s3.URL)
+		w.WriteHeader(http.StatusFound)
+	}))
+	data, err := c.GetTraceData(context.Background(), 42)
+	if err != nil {
+		t.Fatalf("data: %v", err)
+	}
+	if !s3Hit {
+		t.Error("redirect target not hit")
+	}
+	if data != "<gpx>blob</gpx>" {
+		t.Errorf("data=%q", data)
 	}
 }
 

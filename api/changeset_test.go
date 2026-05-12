@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -77,6 +78,43 @@ func TestCloseAndComment(t *testing.T) {
 	}
 }
 
+func TestListChangesetsFilter(t *testing.T) {
+	var seenQuery string
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/changesets" {
+			t.Errorf("path=%s", r.URL.Path)
+		}
+		seenQuery = r.URL.RawQuery
+		io.WriteString(w, `<osm/>`)
+	}))
+	if _, err := c.ListChangesets(context.Background(), ChangesetFilter{
+		UserID: 42, OnlyOpen: true, Limit: 50,
+	}); err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	for _, want := range []string{"user=42", "open=true", "limit=50"} {
+		if !strings.Contains(seenQuery, want) {
+			t.Errorf("query %q missing %q", seenQuery, want)
+		}
+	}
+}
+
+func TestListChangesetsFilterByName(t *testing.T) {
+	var seenQuery string
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenQuery = r.URL.RawQuery
+		io.WriteString(w, `<osm/>`)
+	}))
+	if _, err := c.ListChangesets(context.Background(), ChangesetFilter{
+		DisplayName: "raspbeguy", OnlyClosed: true,
+	}); err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !strings.Contains(seenQuery, "display_name=raspbeguy") || !strings.Contains(seenQuery, "closed=true") {
+		t.Errorf("query: %s", seenQuery)
+	}
+}
+
 func TestWithChangesetClosesOnError(t *testing.T) {
 	var opened, closed bool
 	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +133,7 @@ func TestWithChangesetClosesOnError(t *testing.T) {
 		}
 		return wantErr
 	})
-	if err != wantErr {
+	if !errors.Is(err, wantErr) {
 		t.Errorf("err = %v, want %v", err, wantErr)
 	}
 	if id != 42 || !opened || !closed {
