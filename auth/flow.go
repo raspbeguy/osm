@@ -100,27 +100,36 @@ func Login(ctx context.Context, cfg Config) (*oauth2.Token, error) {
 	}
 	out := make(chan result, 1)
 
+	// deliver sends r to out exactly once; later callbacks are ignored so a
+	// replay or double-load can't deadlock on the size-1 channel.
+	deliver := func(r result) {
+		select {
+		case out <- r:
+		default:
+		}
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc(redirect.Path, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if e := q.Get("error"); e != "" {
 			fmt.Fprintf(w, "login failed: %s\n%s", e, q.Get("error_description"))
-			out <- result{err: fmt.Errorf("authorize error %q: %s", e, q.Get("error_description"))}
+			deliver(result{err: fmt.Errorf("authorize error %q: %s", e, q.Get("error_description"))})
 			return
 		}
 		if q.Get("state") != state {
 			http.Error(w, "state mismatch", http.StatusBadRequest)
-			out <- result{err: errors.New("oauth state mismatch")}
+			deliver(result{err: errors.New("oauth state mismatch")})
 			return
 		}
 		code := q.Get("code")
 		if code == "" {
 			http.Error(w, "missing code", http.StatusBadRequest)
-			out <- result{err: errors.New("missing authorization code")}
+			deliver(result{err: errors.New("missing authorization code")})
 			return
 		}
 		fmt.Fprintln(w, "logged in. you can close this tab.")
-		out <- result{code: code}
+		deliver(result{code: code})
 	})
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go srv.Serve(listener)
@@ -140,6 +149,9 @@ func Login(ctx context.Context, cfg Config) (*oauth2.Token, error) {
 	select {
 	case got = <-out:
 	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.Canceled) {
+			return nil, fmt.Errorf("login cancelled: %w", ctx.Err())
+		}
 		return nil, fmt.Errorf("login timed out after %s", LoginTimeout)
 	}
 	if got.err != nil {

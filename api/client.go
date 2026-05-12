@@ -113,6 +113,6 @@ func (c *Client) sendBody(ctx context.Context, method, path string, body []byte,
 		return "", err
 	}
 	defer resp.Body.Close()
-	out, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	out, err := io.ReadAll(io.LimitReader(resp.Body, 1<<24))
 	return string(out), err
 }

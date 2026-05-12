@@ -215,40 +215,59 @@ func (m submitChangesetModel) beginSubmit(comment string) (submitChangesetModel,
 	m.state = submitSending
 	m.err = nil
 	client := m.client
-	staged := append([]*stagedElement(nil), m.staged...)
+	staged := cloneStaged(m.staged)
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		csID, err := submitChangeset(client, tags, staged)
 		return changesetSubmittedMsg{csID: csID, err: err}
 	})
 }
 
+// cloneStaged deep-copies the staged slice so a concurrent edit in compose
+// can't mutate the payload while the submit goroutine is reading it.
+func cloneStaged(in []*stagedElement) []*stagedElement {
+	out := make([]*stagedElement, len(in))
+	for i, e := range in {
+		cp := *e
+		cp.Tags = append(osm.Tags(nil), e.Tags...)
+		cp.Nodes = append(osm.WayNodes(nil), e.Nodes...)
+		cp.Members = append(osm.Members(nil), e.Members...)
+		out[i] = &cp
+	}
+	return out
+}
+
 func submitChangeset(c *api.Client, tags osm.Tags, staged []*stagedElement) (osm.ChangesetID, error) {
 	ctx := context.Background()
-	csID, err := c.OpenChangeset(ctx, tags)
-	if err != nil {
-		return 0, fmt.Errorf("open changeset: %w", err)
-	}
-	change := buildChange(staged)
-	if _, err := c.UploadChange(ctx, csID, change); err != nil {
-		return csID, fmt.Errorf("upload change: %w", err)
-	}
-	if err := c.CloseChangeset(ctx, csID); err != nil {
-		return csID, fmt.Errorf("close changeset: %w", err)
-	}
-	return csID, nil
+	return c.WithChangeset(ctx, tags, func(csID osm.ChangesetID) error {
+		change := buildChange(staged)
+		if _, err := c.UploadChange(ctx, csID, change); err != nil {
+			return fmt.Errorf("upload change: %w", err)
+		}
+		return nil
+	})
 }
 
 func buildChange(staged []*stagedElement) *osm.Change {
 	change := &osm.Change{
 		Version:   "0.6",
 		Generator: "osm-tui " + osmTUIVersion,
-		Create:    &osm.OSM{},
-		Modify:    &osm.OSM{},
+	}
+	ensureCreate := func() *osm.OSM {
+		if change.Create == nil {
+			change.Create = &osm.OSM{}
+		}
+		return change.Create
+	}
+	ensureModify := func() *osm.OSM {
+		if change.Modify == nil {
+			change.Modify = &osm.OSM{}
+		}
+		return change.Modify
 	}
 	for _, e := range staged {
-		target := change.Modify
+		target := ensureModify()
 		if e.Action == stagedCreate {
-			target = change.Create
+			target = ensureCreate()
 		}
 		switch e.Kind {
 		case "node":

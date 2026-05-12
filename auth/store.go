@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"golang.org/x/oauth2"
 )
@@ -85,6 +86,7 @@ func HTTPClient(ctx context.Context, cfg Config, tok *oauth2.Token) *http.Client
 
 type persistingSource struct {
 	src  oauth2.TokenSource
+	mu   sync.Mutex
 	last *oauth2.Token
 }
 
@@ -93,6 +95,8 @@ func (p *persistingSource) Token() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.last == nil || t.AccessToken != p.last.AccessToken {
 		// Persistence is best-effort: a disk failure shouldn't break the request.
 		_ = SaveToken(t)

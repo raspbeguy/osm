@@ -110,6 +110,7 @@ func (c *Client) ListChangesets(ctx context.Context, f ChangesetFilter) ([]*osm.
 }
 
 // WithChangeset opens a changeset, calls fn, and closes the changeset even if fn errors.
+// Both errors are surfaced via errors.Join so a half-closed changeset is visible to the caller.
 func (c *Client) WithChangeset(ctx context.Context, tags osm.Tags, fn func(id osm.ChangesetID) error) (osm.ChangesetID, error) {
 	id, err := c.OpenChangeset(ctx, tags)
 	if err != nil {
@@ -117,10 +118,7 @@ func (c *Client) WithChangeset(ctx context.Context, tags osm.Tags, fn func(id os
 	}
 	fnErr := fn(id)
 	closeErr := c.CloseChangeset(ctx, id)
-	if fnErr != nil {
-		return id, fnErr
-	}
-	return id, closeErr
+	return id, errors.Join(fnErr, closeErr)
 }
 
 func buildChangesetCreate(tags osm.Tags) ([]byte, error) {
