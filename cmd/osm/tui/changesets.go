@@ -100,7 +100,7 @@ func (m changesetsModel) Update(msg tea.Msg) (changesetsModel, tea.Cmd) {
 			case "enter":
 				if sel := m.selected(); sel != nil {
 					return m, func() tea.Msg {
-						return navigateMsg{to: screenChangesetView, itemID: int64(sel.ID), parent: screenChangesets}
+						return navigateMsg{to: screenChangesetView, itemID: int64(sel.ID)}
 					}
 				}
 			}

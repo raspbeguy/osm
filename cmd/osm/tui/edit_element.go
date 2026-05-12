@@ -121,7 +121,7 @@ func (m editElementModel) Update(msg tea.Msg) (editElementModel, tea.Cmd) {
 		case "m":
 			if m.target.Kind == "relation" {
 				return m, func() tea.Msg {
-					return navigateMsg{to: screenEditMembers, parent: screenEditElement}
+					return navigateMsg{to: screenEditMembers}
 				}
 			}
 		}

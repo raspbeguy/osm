@@ -35,7 +35,6 @@ type navigateMsg struct {
 	to      screen
 	itemID  int64
 	kind    string
-	parent  screen
 	refresh bool
 }
 
@@ -277,13 +276,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.submit, cmd = m.submit.Update(msg)
 	}
 	return m, cmd
-}
-
-func (m rootModel) activeMessages() messagesModel {
-	if m.screen == screenOutbox {
-		return m.outbox
-	}
-	return m.inbox
 }
 
 func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {

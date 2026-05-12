@@ -300,7 +300,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 				case "h":
 					if e := m.selectedElement(); e.ID != 0 {
 						return m, func() tea.Msg {
-							return navigateMsg{to: screenHistory, itemID: e.ID, kind: e.Kind, parent: screenChangesetView}
+							return navigateMsg{to: screenHistory, itemID: e.ID, kind: e.Kind}
 						}
 					}
 				}

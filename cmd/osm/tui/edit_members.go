@@ -138,7 +138,7 @@ func (m editMembersModel) Update(msg tea.Msg) (editMembersModel, tea.Cmd) {
 			return m, nil
 		case "t":
 			return m, func() tea.Msg {
-				return navigateMsg{to: screenEditElement, parent: screenComposeChangeset}
+				return navigateMsg{to: screenEditElement}
 			}
 		}
 	}

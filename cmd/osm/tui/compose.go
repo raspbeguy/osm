@@ -121,7 +121,7 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 		switch msg.String() {
 		case "a":
 			return m, func() tea.Msg {
-				return navigateMsg{to: screenAddElement, parent: screenComposeChangeset}
+				return navigateMsg{to: screenAddElement}
 			}
 		case "n":
 			e := &stagedElement{Kind: "relation", ID: nextNewID(m.staged), Action: stagedCreate}
@@ -130,12 +130,12 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 			m.list.Select(len(m.staged) - 1)
 			m = m.rewrap()
 			return m, func() tea.Msg {
-				return navigateMsg{to: screenEditElement, parent: screenComposeChangeset}
+				return navigateMsg{to: screenEditElement}
 			}
 		case "enter":
 			if m.selectedStaged() != nil {
 				return m, func() tea.Msg {
-					return navigateMsg{to: screenEditElement, parent: screenComposeChangeset}
+					return navigateMsg{to: screenEditElement}
 				}
 			}
 		case "d":
@@ -160,7 +160,7 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 				return m, nil
 			}
 			return m, func() tea.Msg {
-				return navigateMsg{to: screenSubmitChangeset, parent: screenComposeChangeset}
+				return navigateMsg{to: screenSubmitChangeset}
 			}
 		}
 	}
