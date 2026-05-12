@@ -144,7 +144,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.traces.viewport.Width = rightW
 		m.traces.viewport.Height = paneH
 
-		m.compose.list.SetSize(msg.Width, msg.Height-3)
+		m.compose.list.SetSize(leftW, paneH)
+		m.compose.viewport.Width = rightW
+		m.compose.viewport.Height = paneH
 		m.addElement.input.Width = msg.Width - 4
 		m.editEl.list.SetSize(msg.Width, msg.Height-5)
 		m.editEl.input.Width = msg.Width - 4
@@ -161,6 +163,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
 		m.traces = m.traces.rewrap()
+		m.compose = m.compose.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
