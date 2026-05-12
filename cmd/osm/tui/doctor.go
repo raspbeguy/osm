@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -47,11 +46,11 @@ func (m doctorModel) show() (doctorModel, tea.Cmd) {
 func (m doctorModel) load() tea.Cmd {
 	c := m.client
 	return func() tea.Msg {
-		caps, err := c.Capabilities(context.Background())
+		caps, err := c.Capabilities(programCtx)
 		if err != nil {
 			return doctorLoadedMsg{err: err}
 		}
-		perms, err := c.Permissions(context.Background())
+		perms, err := c.Permissions(programCtx)
 		if err != nil {
 			return doctorLoadedMsg{err: err}
 		}

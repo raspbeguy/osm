@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -237,7 +236,7 @@ func cloneStaged(in []*stagedElement) []*stagedElement {
 }
 
 func submitChangeset(c *api.Client, tags osm.Tags, staged []*stagedElement) (osm.ChangesetID, error) {
-	ctx := context.Background()
+	ctx := programCtx
 	return c.WithChangeset(ctx, tags, func(csID osm.ChangesetID) error {
 		change := buildChange(staged)
 		if _, err := c.UploadChange(ctx, csID, change); err != nil {

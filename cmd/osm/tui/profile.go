@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -47,7 +46,7 @@ func (m profileModel) show() (profileModel, tea.Cmd) {
 func (m profileModel) load() tea.Cmd {
 	client := m.client
 	return func() tea.Msg {
-		u, err := client.Whoami(context.Background())
+		u, err := client.Whoami(programCtx)
 		return profileLoadedMsg{user: u, err: err}
 	}
 }

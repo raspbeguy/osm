@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -105,12 +104,12 @@ func (m notesModel) query(input string) tea.Cmd {
 	client := m.client
 	if isID {
 		return func() tea.Msg {
-			n, err := client.GetNote(context.Background(), id)
+			n, err := client.GetNote(programCtx, id)
 			return noteLoadedMsg{note: n, err: err}
 		}
 	}
 	return func() tea.Msg {
-		ns, err := client.QueryNotes(context.Background(), api.NotesQuery{BBox: bbox})
+		ns, err := client.QueryNotes(programCtx, api.NotesQuery{BBox: bbox})
 		return noteLoadedMsg{notes: ns, err: err}
 	}
 }

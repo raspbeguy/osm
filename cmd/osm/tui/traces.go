@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -86,7 +85,7 @@ func (m tracesModel) show() (tracesModel, tea.Cmd) {
 func (m tracesModel) load() tea.Cmd {
 	client := m.client
 	return func() tea.Msg {
-		ts, err := client.ListTraces(context.Background())
+		ts, err := client.ListTraces(programCtx)
 		return tracesLoadedMsg{traces: ts, err: err}
 	}
 }
@@ -94,7 +93,7 @@ func (m tracesModel) load() tea.Cmd {
 func (m tracesModel) fetchData(id int64) tea.Cmd {
 	client := m.client
 	return func() tea.Msg {
-		d, err := client.GetTraceData(context.Background(), id)
+		d, err := client.GetTraceData(programCtx, id)
 		return traceDataLoadedMsg{id: id, data: d, err: err}
 	}
 }

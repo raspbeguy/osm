@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"encoding/xml"
 	"fmt"
 	"strings"
@@ -139,7 +138,7 @@ func (m changesetViewModel) load() tea.Cmd {
 	client := m.client
 	id := m.csID
 	return func() tea.Msg {
-		cs, err := client.GetChangeset(context.Background(), id)
+		cs, err := client.GetChangeset(programCtx, id)
 		return changesetViewLoadedMsg{csID: id, cs: cs, err: err}
 	}
 }
@@ -148,7 +147,7 @@ func (m changesetViewModel) loadXML() tea.Cmd {
 	client := m.client
 	id := m.csID
 	return func() tea.Msg {
-		x, err := client.DownloadChangeset(context.Background(), id)
+		x, err := client.DownloadChangeset(programCtx, id)
 		return changesetXMLLoadedMsg{csID: id, xml: x, err: err}
 	}
 }
@@ -185,7 +184,7 @@ func (m changesetViewModel) fetchPrev(e changesetElement) tea.Cmd {
 }
 
 func fetchPreviousVersion(c *api.Client, kind string, id int64, version int) (*prevElement, error) {
-	ctx := context.Background()
+	ctx := programCtx
 	switch kind {
 	case "node":
 		n, err := c.GetNodeVersion(ctx, osm.NodeID(id), version)

@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -63,11 +62,11 @@ func (m changesetsModel) show() (changesetsModel, tea.Cmd) {
 func (m changesetsModel) load() tea.Cmd {
 	client := m.client
 	return func() tea.Msg {
-		u, err := client.Whoami(context.Background())
+		u, err := client.Whoami(programCtx)
 		if err != nil {
 			return changesetsLoadedMsg{err: err}
 		}
-		css, err := client.ListChangesets(context.Background(), api.ChangesetFilter{UserID: u.ID})
+		css, err := client.ListChangesets(programCtx, api.ChangesetFilter{UserID: u.ID})
 		return changesetsLoadedMsg{changesets: css, err: err}
 	}
 }

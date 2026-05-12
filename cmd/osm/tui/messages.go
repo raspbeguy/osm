@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -120,9 +119,9 @@ func (m messagesModel) load() tea.Cmd {
 			err  error
 		)
 		if dir == dirInbox {
-			msgs, err = client.ListInbox(context.Background())
+			msgs, err = client.ListInbox(programCtx)
 		} else {
-			msgs, err = client.ListOutbox(context.Background())
+			msgs, err = client.ListOutbox(programCtx)
 		}
 		return messagesLoadedMsg{direction: dir, messages: msgs, err: err}
 	}
@@ -132,7 +131,7 @@ func (m messagesModel) fetchBody(id int64) tea.Cmd {
 	client := m.client
 	dir := m.direction
 	return func() tea.Msg {
-		msg, err := client.GetMessage(context.Background(), id)
+		msg, err := client.GetMessage(programCtx, id)
 		return messageBodyLoadedMsg{direction: dir, id: id, msg: msg, err: err}
 	}
 }
@@ -141,7 +140,7 @@ func (m messagesModel) deleteAction(id int64) tea.Cmd {
 	client := m.client
 	dir := m.direction
 	return func() tea.Msg {
-		err := client.DeleteMessage(context.Background(), id)
+		err := client.DeleteMessage(programCtx, id)
 		return messageDeletedMsg{direction: dir, id: id, err: err}
 	}
 }

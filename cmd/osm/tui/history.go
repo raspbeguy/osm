@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -103,7 +102,7 @@ func fetchHistory(c *api.Client, kind string, id int64) (string, error) {
 	var lines []string
 	switch kind {
 	case "node":
-		ns, err := c.NodeHistory(context.Background(), osm.NodeID(id))
+		ns, err := c.NodeHistory(programCtx, osm.NodeID(id))
 		if err != nil {
 			return "", err
 		}
@@ -111,7 +110,7 @@ func fetchHistory(c *api.Client, kind string, id int64) (string, error) {
 			lines = append(lines, formatHistoryRow(int(n.Version), n.Timestamp.Format("2006-01-02T15:04:05Z"), int64(n.ChangesetID), n.Visible, n.User))
 		}
 	case "way":
-		ws, err := c.WayHistory(context.Background(), osm.WayID(id))
+		ws, err := c.WayHistory(programCtx, osm.WayID(id))
 		if err != nil {
 			return "", err
 		}
@@ -119,7 +118,7 @@ func fetchHistory(c *api.Client, kind string, id int64) (string, error) {
 			lines = append(lines, formatHistoryRow(int(w.Version), w.Timestamp.Format("2006-01-02T15:04:05Z"), int64(w.ChangesetID), w.Visible, w.User))
 		}
 	case "relation":
-		rs, err := c.RelationHistory(context.Background(), osm.RelationID(id))
+		rs, err := c.RelationHistory(programCtx, osm.RelationID(id))
 		if err != nil {
 			return "", err
 		}

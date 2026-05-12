@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -248,7 +247,7 @@ func nextNewID(staged []*stagedElement) int64 {
 // fetchStagedFor builds a *stagedElement from the current server state of an
 // element. Used by the add-by-id flow.
 func fetchStagedFor(c *api.Client, kind string, id int64) (*stagedElement, error) {
-	ctx := context.Background()
+	ctx := programCtx
 	switch kind {
 	case "node":
 		n, err := c.GetNode(ctx, osm.NodeID(id))
