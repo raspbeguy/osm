@@ -19,6 +19,10 @@ const (
 	screenDoctor
 	screenHistory
 	screenTraces
+	screenComposeChangeset
+	screenAddElement
+	screenEditElement
+	screenSubmitChangeset
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
@@ -48,6 +52,9 @@ type rootModel struct {
 	doctor     doctorModel
 	history    historyModel
 	traces     tracesModel
+	compose    composeChangesetModel
+	addElement addElementModel
+	editEl     editElementModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -64,6 +71,9 @@ func newRoot(c *api.Client) rootModel {
 		doctor:     newDoctor(c),
 		history:    newHistory(c),
 		traces:     newTraces(c),
+		compose:    newCompose(c),
+		addElement: newAddElement(c),
+		editEl:     newEditElement(),
 	}
 }
 
@@ -129,6 +139,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.traces.viewport.Width = rightW
 		m.traces.viewport.Height = paneH
 
+		m.compose.list.SetSize(msg.Width, msg.Height-3)
+		m.addElement.input.Width = msg.Width - 4
+		m.editEl.viewport.Width = msg.Width
+		m.editEl.viewport.Height = msg.Height - 3
+
 		m.profile = m.profile.rewrap()
 		m.inbox = m.inbox.rewrap()
 		m.outbox = m.outbox.rewrap()
@@ -136,6 +151,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
 		m.traces = m.traces.rewrap()
+		m.editEl = m.editEl.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -154,6 +170,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case screenChangesetView:
 				m.screen = screenChangesets
 				return m, nil
+			case screenAddElement, screenEditElement, screenSubmitChangeset:
+				m.screen = screenComposeChangeset
+				return m, nil
 			default:
 				m.screen = screenMenu
 				return m, nil
@@ -165,6 +184,13 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case navigateMsg:
 		return m.handleNavigate(msg)
+	case stagedAddedMsg:
+		if msg.elem != nil {
+			m.compose.staged = append(m.compose.staged, msg.elem)
+			m.compose.refreshList()
+		}
+		m.screen = screenComposeChangeset
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -189,6 +215,12 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.history, cmd = m.history.Update(msg)
 	case screenTraces:
 		m.traces, cmd = m.traces.Update(msg)
+	case screenComposeChangeset:
+		m.compose, cmd = m.compose.Update(msg)
+	case screenAddElement:
+		m.addElement, cmd = m.addElement.Update(msg)
+	case screenEditElement:
+		m.editEl, cmd = m.editEl.Update(msg)
 	}
 	return m, cmd
 }
@@ -255,6 +287,19 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			return m, cmd
 		}
 		return m, nil
+	case screenComposeChangeset:
+		var cmd tea.Cmd
+		m.compose, cmd = m.compose.show()
+		return m, cmd
+	case screenAddElement:
+		var cmd tea.Cmd
+		m.addElement, cmd = m.addElement.show()
+		return m, cmd
+	case screenEditElement:
+		if sel := m.compose.selectedStaged(); sel != nil {
+			m.editEl = m.editEl.show(sel)
+		}
+		return m, nil
 	}
 	return m, nil
 }
@@ -281,6 +326,12 @@ func (m rootModel) View() string {
 		return m.history.View()
 	case screenTraces:
 		return m.traces.View()
+	case screenComposeChangeset:
+		return m.compose.View()
+	case screenAddElement:
+		return m.addElement.View()
+	case screenEditElement:
+		return m.editEl.View()
 	}
 	return ""
 }

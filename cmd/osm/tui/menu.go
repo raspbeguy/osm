@@ -29,6 +29,7 @@ func newMenu() menuModel {
 		menuItem{name: "Notes", desc: "lookup a note by id or bbox", target: screenNotes},
 		menuItem{name: "History", desc: "version history of an element", target: screenHistory},
 		menuItem{name: "Server info", desc: "capabilities and permissions", target: screenDoctor},
+		menuItem{name: "Create changeset", desc: "stage edits and submit a new changeset", target: screenComposeChangeset},
 	}
 	l := list.New(items, list.NewDefaultDelegate(), 40, 20)
 	l.Title = "osm tui"

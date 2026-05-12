@@ -8,8 +8,8 @@ func TestIsLightBackground(t *testing.T) {
 		want bool
 	}{
 		{"", false},
-		{"15;0", false},   // dark
-		{"0;15", true},    // light
+		{"15;0", false}, // dark
+		{"0;15", true},  // light
 		{"15;default", false},
 		{"0;7", true},
 		{"15;8", false},
