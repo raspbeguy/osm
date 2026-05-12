@@ -184,7 +184,7 @@ func (m editElementModel) View() string {
 	if m.target.Action == stagedCreate {
 		action = "create"
 	}
-	title := fmt.Sprintf("%s %s %d", action, m.target.Kind, m.target.ID)
+	title := fmt.Sprintf("%s %s %d", action, kindGlyph(m.target.Kind), m.target.ID)
 	header := headerStyle.Render(title)
 	if m.target.Version > 0 {
 		header += " " + mutedStyle.Render(fmt.Sprintf("(v%d)", m.target.Version))

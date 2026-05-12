@@ -5,6 +5,20 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// kindGlyph returns the single-cell symbol used to represent an OSM element
+// kind in lists and headers: node = ●, way = ━, relation = ⬡.
+func kindGlyph(kind string) string {
+	switch kind {
+	case "node":
+		return "●"
+	case "way":
+		return "━"
+	case "relation":
+		return "⬡"
+	}
+	return "?"
+}
+
 // newCompactDelegate returns a list delegate that renders each item on a
 // single line: title only, no description, no inter-item spacing.
 func newCompactDelegate() list.DefaultDelegate {

@@ -72,7 +72,7 @@ type prevElement struct {
 type csElementItem struct{ e changesetElement }
 
 func (i csElementItem) Title() string {
-	return fmt.Sprintf("%c %s %d v%d", i.e.Action, i.e.Kind, i.e.ID, i.e.Version)
+	return fmt.Sprintf("%c %s %d v%d", i.e.Action, kindGlyph(i.e.Kind), i.e.ID, i.e.Version)
 }
 
 func (i csElementItem) Description() string { return "" }
@@ -364,7 +364,7 @@ func (m changesetViewModel) renderDetail() string {
 		action = "deleted"
 	}
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("%c %s %d v%d", e.Action, e.Kind, e.ID, e.Version)) + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("%c %s %d v%d", e.Action, kindGlyph(e.Kind), e.ID, e.Version)) + "\n")
 	sb.WriteString(mutedStyle.Render(action) + "\n\n")
 
 	if len(e.Tags) > 0 {

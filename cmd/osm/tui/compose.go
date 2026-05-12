@@ -51,7 +51,7 @@ func (i stagedItem) Title() string {
 	if i.e.Action == stagedCreate {
 		sign = "+"
 	}
-	return fmt.Sprintf("%s %s %d", sign, i.e.Kind, i.e.ID)
+	return fmt.Sprintf("%s %s %d", sign, kindGlyph(i.e.Kind), i.e.ID)
 }
 
 func (i stagedItem) Description() string { return "" }
@@ -203,7 +203,7 @@ func renderStagedElement(e *stagedElement) string {
 	if e.Action == stagedCreate {
 		action = "create"
 	}
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("%s %s %d", action, e.Kind, e.ID)) + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("%s %s %d", action, kindGlyph(e.Kind), e.ID)) + "\n")
 	if e.Version > 0 {
 		sb.WriteString(mutedStyle.Render(fmt.Sprintf("version %d", e.Version)) + "\n")
 	}
@@ -225,7 +225,7 @@ func renderStagedElement(e *stagedElement) string {
 				if role == "" {
 					role = "(no role)"
 				}
-				fmt.Fprintf(&sb, "  %s %d  [%s]\n", mm.Type, mm.Ref, role)
+				fmt.Fprintf(&sb, "  %s %d  [%s]\n", kindGlyph(string(mm.Type)), mm.Ref, role)
 			}
 		}
 	}

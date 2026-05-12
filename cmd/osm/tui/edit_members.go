@@ -27,7 +27,7 @@ func (i memberItem) Title() string {
 	if role == "" {
 		role = "(no role)"
 	}
-	return fmt.Sprintf("%s %d  [%s]", i.m.Type, i.m.Ref, role)
+	return fmt.Sprintf("%s %d  [%s]", kindGlyph(string(i.m.Type)), i.m.Ref, role)
 }
 
 func (i memberItem) Description() string { return "" }
@@ -192,7 +192,7 @@ func (m editMembersModel) View() string {
 	if m.target == nil {
 		return "no element\n" + footerStyle.Render("esc back")
 	}
-	title := fmt.Sprintf("members of %s %d", m.target.Kind, m.target.ID)
+	title := fmt.Sprintf("members of %s %d", kindGlyph(m.target.Kind), m.target.ID)
 	header := headerStyle.Render(title)
 	var body, footer string
 	switch m.state {
