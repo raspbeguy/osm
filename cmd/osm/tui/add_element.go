@@ -125,7 +125,7 @@ func (m addElementModel) View() string {
 	sb.WriteString(headerStyle.Render("Add element to changeset") + "\n")
 	sb.WriteString(mutedStyle.Render("enter element kind and id (e.g. 'node 11724474473')") + "\n\n")
 	if m.err != nil {
-		sb.WriteString(errorStyle.Render("✗ "+m.err.Error()) + "\n\n")
+		sb.WriteString(errorStyle.Render("error: "+m.err.Error()) + "\n\n")
 	}
 	sb.WriteString(m.input.View())
 	return sb.String() + "\n" + footerStyle.Render("enter submit, esc cancel")

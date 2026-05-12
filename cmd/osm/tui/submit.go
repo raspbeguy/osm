@@ -318,7 +318,7 @@ func (m submitChangesetModel) View() string {
 		footer = "enter save, esc cancel"
 	}
 	if m.err != nil {
-		footer = errorStyle.Render(m.err.Error()) + " — " + footer
+		footer = errorStyle.Render(m.err.Error()) + " - " + footer
 	}
 	return sb.String() + "\n" + footerStyle.Render(footer)
 }

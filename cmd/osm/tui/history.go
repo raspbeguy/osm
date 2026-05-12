@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -140,7 +141,7 @@ func formatHistoryRow(version int, ts string, cs int64, visible bool, user strin
 func parseHistoryQuery(s string) (string, int64, error) {
 	parts := strings.Fields(strings.TrimSpace(s))
 	if len(parts) != 2 {
-		return "", 0, fmt.Errorf("expected 'node|way|relation <id>'")
+		return "", 0, errors.New("expected 'node|way|relation <id>'")
 	}
 	if parts[0] != "node" && parts[0] != "way" && parts[0] != "relation" {
 		return "", 0, fmt.Errorf("kind must be node, way, or relation; got %q", parts[0])

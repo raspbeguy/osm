@@ -79,7 +79,6 @@ func (i csElementItem) Description() string { return "" }
 
 func (i csElementItem) FilterValue() string { return i.Title() }
 
-
 type changesetViewModel struct {
 	client         *api.Client
 	csID           osm.ChangesetID

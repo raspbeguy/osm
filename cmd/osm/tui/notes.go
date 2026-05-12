@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -215,7 +216,7 @@ func formatNote(n *api.Note) string {
 func parseNoteQuery(s string) (id int64, bbox [4]float64, isID bool, err error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
-		return 0, [4]float64{}, false, fmt.Errorf("empty input")
+		return 0, [4]float64{}, false, errors.New("empty input")
 	}
 	if !strings.Contains(s, ",") {
 		n, err := strconv.ParseInt(s, 10, 64)
@@ -226,7 +227,7 @@ func parseNoteQuery(s string) (id int64, bbox [4]float64, isID bool, err error) 
 	}
 	parts := strings.Split(s, ",")
 	if len(parts) != 4 {
-		return 0, [4]float64{}, false, fmt.Errorf("bbox needs 4 comma-separated values: l,b,r,t")
+		return 0, [4]float64{}, false, errors.New("bbox needs 4 comma-separated values: l,b,r,t")
 	}
 	var bb [4]float64
 	for i, p := range parts {

@@ -58,7 +58,6 @@ func (i stagedItem) Description() string { return "" }
 
 func (i stagedItem) FilterValue() string { return i.Title() }
 
-
 type composeChangesetModel struct {
 	client   *api.Client
 	list     list.Model
@@ -184,7 +183,7 @@ func (m composeChangesetModel) View() string {
 		footer = "esc back, tab swap pane, a add, n new relation, enter edit, d drop, c clear, s submit"
 	}
 	if m.err != nil {
-		footer = errorStyle.Render(m.err.Error()) + " — " + footer
+		footer = errorStyle.Render(m.err.Error()) + " - " + footer
 	}
 	if len(m.staged) == 0 {
 		body := mutedStyle.Render("(no staged changes yet)") + "\n\n" +
@@ -237,13 +236,13 @@ func renderStagedElement(e *stagedElement) string {
 }
 
 func nextNewID(staged []*stagedElement) int64 {
-	min := int64(0)
+	lowest := int64(0)
 	for _, e := range staged {
-		if e.ID < min {
-			min = e.ID
+		if e.ID < lowest {
+			lowest = e.ID
 		}
 	}
-	return min - 1
+	return lowest - 1
 }
 
 // fetchStagedFor builds a *stagedElement from the current server state of an

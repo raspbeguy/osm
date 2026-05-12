@@ -122,7 +122,7 @@ func (c *Client) GetTraceData(ctx context.Context, id int64) (string, error) {
 	case http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
 		loc := resp.Header.Get("Location")
 		if loc == "" {
-			return "", fmt.Errorf("redirect without location")
+			return "", errors.New("redirect without location")
 		}
 		r2, err := http.NewRequestWithContext(ctx, http.MethodGet, loc, nil)
 		if err != nil {

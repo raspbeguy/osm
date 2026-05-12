@@ -206,7 +206,7 @@ func (m editElementModel) View() string {
 		}
 	}
 	if m.err != nil {
-		footer = errorStyle.Render(m.err.Error()) + " — " + footer
+		footer = errorStyle.Render(m.err.Error()) + " - " + footer
 	}
 	return header + "\n\n" + body + "\n" + footerStyle.Render(footer)
 }
