@@ -225,6 +225,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			case screenSubmitChangeset:
+				if m.submit.state == submitAddingTag {
+					break
+				}
 				if m.submit.state == submitDone && m.submit.err == nil {
 					m.compose.staged = nil
 					m.compose.refreshList()
@@ -232,11 +235,21 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen = screenComposeChangeset
 				m.compose = m.compose.rewrap()
 				return m, nil
-			case screenAddElement, screenEditElement:
+			case screenAddElement:
+				m.screen = screenComposeChangeset
+				m.compose = m.compose.rewrap()
+				return m, nil
+			case screenEditElement:
+				if m.editEl.state != editTagList {
+					break
+				}
 				m.screen = screenComposeChangeset
 				m.compose = m.compose.rewrap()
 				return m, nil
 			case screenEditMembers:
+				if m.editMembers.state != editMemberList {
+					break
+				}
 				m.screen = screenEditElement
 				return m, nil
 			default:

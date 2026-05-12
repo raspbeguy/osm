@@ -3,6 +3,7 @@ package tui
 import (
 	"encoding/xml"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -406,17 +407,26 @@ func formatTagDiff(cur, prev osm.Tags) string {
 	for _, t := range prev {
 		prevMap[t.Key] = t.Value
 	}
-	var sb strings.Builder
-	for k, v := range curMap {
-		pv, ok := prevMap[k]
-		if !ok {
-			sb.WriteString("  + " + styledTag(k, v) + "\n")
-		} else if pv != v {
-			sb.WriteString("  ~ " + tagKeyStyle.Render(k) + ": " + tagValueStyle.Render(pv) + mutedStyle.Render(" → ") + tagValueStyle.Render(v) + "\n")
+	keys := make([]string, 0, len(curMap)+len(prevMap))
+	for k := range curMap {
+		keys = append(keys, k)
+	}
+	for k := range prevMap {
+		if _, ok := curMap[k]; !ok {
+			keys = append(keys, k)
 		}
 	}
-	for k, pv := range prevMap {
-		if _, ok := curMap[k]; !ok {
+	sort.Strings(keys)
+	var sb strings.Builder
+	for _, k := range keys {
+		v, inCur := curMap[k]
+		pv, inPrev := prevMap[k]
+		switch {
+		case inCur && !inPrev:
+			sb.WriteString("  + " + styledTag(k, v) + "\n")
+		case inCur && inPrev && pv != v:
+			sb.WriteString("  ~ " + tagKeyStyle.Render(k) + ": " + tagValueStyle.Render(pv) + mutedStyle.Render(" → ") + tagValueStyle.Render(v) + "\n")
+		case !inCur && inPrev:
 			sb.WriteString("  - " + styledTag(k, pv) + "\n")
 		}
 	}

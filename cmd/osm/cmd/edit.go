@@ -126,7 +126,11 @@ func parseKVTags(args []string) (osm.Tags, error) {
 		if i < 0 {
 			return nil, fmt.Errorf("expected key=value, got %q", a)
 		}
-		out = append(out, osm.Tag{Key: a[:i], Value: a[i+1:]})
+		key := a[:i]
+		if key == "" {
+			return nil, fmt.Errorf("empty tag key in %q", a)
+		}
+		out = append(out, osm.Tag{Key: key, Value: a[i+1:]})
 	}
 	return out, nil
 }
