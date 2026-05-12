@@ -288,8 +288,13 @@ func (m messagesModel) rewrap() messagesModel {
 	}
 	header := headerStyle.Render(msg.Title) + "\n" +
 		mutedStyle.Render(fmt.Sprintf("from %s • to %s • %s", msg.FromUser, msg.ToUser, msg.SentOn))
-	body := header + "\n\n" + msg.Body
-	m.viewport.SetContent(wrapText(body, m.viewport.Width))
+	rendered := msg.Body
+	if msg.BodyFormat == "markdown" || msg.BodyFormat == "" {
+		rendered = renderMarkdown(msg.Body, m.viewport.Width)
+	} else {
+		rendered = wrapText(msg.Body, m.viewport.Width)
+	}
+	m.viewport.SetContent(header + "\n\n" + rendered)
 	return m
 }
 

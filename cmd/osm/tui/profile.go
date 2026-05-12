@@ -83,14 +83,19 @@ func (m profileModel) View() string {
 	return m.viewport.View() + "\n" + footerStyle.Render("esc to go back")
 }
 
-func formatUser(u *api.User) string {
-	return fmt.Sprintf("Display name : %s\nID           : %d\nCreated      : %s\nChangesets   : %d\nLanguages    : %v\n\n%s",
-		u.DisplayName, u.ID, u.AccountCreated, u.ChangesetCount, u.Languages, u.Description)
+func formatUserHeader(u *api.User) string {
+	return fmt.Sprintf("Display name : %s\nID           : %d\nCreated      : %s\nChangesets   : %d\nLanguages    : %v",
+		u.DisplayName, u.ID, u.AccountCreated, u.ChangesetCount, u.Languages)
 }
 
 func (m profileModel) rewrap() profileModel {
 	if m.user != nil {
-		m.viewport.SetContent(wrapText(formatUser(m.user), m.viewport.Width))
+		head := wrapText(formatUserHeader(m.user), m.viewport.Width)
+		body := head
+		if m.user.Description != "" {
+			body += "\n\n" + renderMarkdown(m.user.Description, m.viewport.Width)
+		}
+		m.viewport.SetContent(body)
 	}
 	return m
 }
