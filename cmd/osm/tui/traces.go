@@ -207,7 +207,7 @@ func (m tracesModel) rewrap() tracesModel {
 			return m
 		}
 		if data, ok := m.data[id]; ok {
-			m.viewport.SetContent(wrapText(data, m.viewport.Width))
+			m.viewport.SetContent(wrapText(highlightXML(data), m.viewport.Width))
 			return m
 		}
 		m.viewport.SetContent(mutedStyle.Render("(no data yet)"))

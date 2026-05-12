@@ -336,7 +336,7 @@ func (m changesetViewModel) rewrap() changesetViewModel {
 	switch m.mode {
 	case csModeXML:
 		if m.xml != "" {
-			m.viewport.SetContent(wrapText(m.xml, m.viewport.Width))
+			m.viewport.SetContent(wrapText(highlightXML(m.xml), m.viewport.Width))
 		}
 	case csModeElements:
 		m.detailViewport.SetContent(m.renderDetail())
