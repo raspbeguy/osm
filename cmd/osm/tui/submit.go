@@ -101,11 +101,8 @@ func (m submitChangesetModel) Update(msg tea.Msg) (submitChangesetModel, tea.Cmd
 	switch msg := msg.(type) {
 	case changesetSubmittedMsg:
 		m.state = submitDone
-		if msg.err != nil {
-			m.err = msg.err
-		} else {
-			m.resultID = msg.csID
-		}
+		m.resultID = msg.csID
+		m.err = msg.err
 		return m, nil
 	case spinner.TickMsg:
 		if m.state != submitSending {
@@ -295,7 +292,11 @@ func (m submitChangesetModel) View() string {
 	}
 	if m.state == submitDone {
 		if m.err != nil {
-			return errorStyle.Render("submit failed: "+m.err.Error()) + "\n\n" +
+			head := errorStyle.Render("submit failed: " + m.err.Error())
+			if m.resultID != 0 {
+				head += "\n" + mutedStyle.Render(fmt.Sprintf("changeset %d may still be open on the server", m.resultID))
+			}
+			return head + "\n\n" +
 				mutedStyle.Render("staged changes are preserved") + "\n" +
 				footerStyle.Render("esc back")
 		}

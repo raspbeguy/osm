@@ -37,6 +37,7 @@ type changesetXMLLoadedMsg struct {
 }
 
 type prevElemLoadedMsg struct {
+	csID osm.ChangesetID
 	key  string
 	prev *prevElement
 	err  error
@@ -176,10 +177,11 @@ func (m changesetViewModel) fetchPrev(e changesetElement) tea.Cmd {
 	}
 	m.prevLoading[key] = true
 	client := m.client
+	csID := m.csID
 	kind, id, v := e.Kind, e.ID, e.Version-1
 	return tea.Batch(m.spinner.Tick, func() tea.Msg {
 		prev, err := fetchPreviousVersion(client, kind, id, v)
-		return prevElemLoadedMsg{key: key, prev: prev, err: err}
+		return prevElemLoadedMsg{csID: csID, key: key, prev: prev, err: err}
 	})
 }
 
@@ -252,6 +254,9 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 		}
 		return m, nil
 	case prevElemLoadedMsg:
+		if msg.csID != m.csID {
+			return m, nil
+		}
 		delete(m.prevLoading, msg.key)
 		if msg.err == nil && msg.prev != nil {
 			m.prevCache[msg.key] = msg.prev

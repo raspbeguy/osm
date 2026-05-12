@@ -117,7 +117,7 @@ func (c *Client) GetTraceData(ctx context.Context, id int64) (string, error) {
 	defer resp.Body.Close()
 	switch resp.StatusCode {
 	case http.StatusOK:
-		b, err := io.ReadAll(resp.Body)
+		b, err := io.ReadAll(io.LimitReader(resp.Body, 1<<24))
 		return string(b), err
 	case http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
 		loc := resp.Header.Get("Location")
@@ -134,13 +134,13 @@ func (c *Client) GetTraceData(ctx context.Context, id int64) (string, error) {
 		}
 		defer resp2.Body.Close()
 		if resp2.StatusCode >= 400 {
-			body, _ := io.ReadAll(io.LimitReader(resp2.Body, 4096))
+			body, _ := io.ReadAll(io.LimitReader(resp2.Body, errBodyCap))
 			return "", fmt.Errorf("fetch %s: %s: %s", loc, resp2.Status, string(body))
 		}
-		b, err := io.ReadAll(resp2.Body)
+		b, err := io.ReadAll(io.LimitReader(resp2.Body, 1<<24))
 		return string(b), err
 	default:
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, errBodyCap))
 		return "", mapHTTPError(resp.StatusCode, resp.Status, string(body))
 	}
 }

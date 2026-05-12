@@ -15,6 +15,11 @@ const (
 	DefaultBaseURL   = "https://api.openstreetmap.org/api/0.6"
 	SandboxBaseURL   = "https://master.apis.dev.openstreetmap.org/api/0.6"
 	DefaultUserAgent = "osm-go (https://github.com/raspbeguy/osm)"
+
+	// errBodyCap is the max bytes read from an error response body. Larger
+	// helps debug verbose server errors, but keeps memory bounded on hostile
+	// or oversized payloads.
+	errBodyCap = 4096
 )
 
 type Client struct {
@@ -40,7 +45,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	if resp.StatusCode >= 400 {
-		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, errBodyCap))
 		resp.Body.Close()
 		return nil, mapHTTPError(resp.StatusCode, resp.Status, string(b))
 	}

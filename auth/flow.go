@@ -132,8 +132,16 @@ func Login(ctx context.Context, cfg Config) (*oauth2.Token, error) {
 		deliver(result{code: code})
 	})
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-	go srv.Serve(listener)
-	defer srv.Shutdown(context.Background())
+	go func() {
+		if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			deliver(result{err: fmt.Errorf("serve callback: %w", err)})
+		}
+	}()
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
 
 	authURL := oc.AuthCodeURL(state, oauth2.S256ChallengeOption(verifier))
 	if cfg.OnAuthURL != nil {
