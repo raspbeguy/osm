@@ -20,7 +20,7 @@ func (i changesetItem) Title() string {
 	if c == "" {
 		c = "(no comment)"
 	}
-	return fmt.Sprintf("%s  %d  %s  %s", i.cs.CreatedAt.Format("2006-01-02"), i.cs.ID, i.cs.User, c)
+	return fmt.Sprintf("%s  %d  %s", i.cs.CreatedAt.Format("2006-01-02"), i.cs.ID, c)
 }
 
 func (i changesetItem) Description() string { return "" }
