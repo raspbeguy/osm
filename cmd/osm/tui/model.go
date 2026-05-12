@@ -57,6 +57,7 @@ type rootModel struct {
 	addElement  addElementModel
 	editEl      editElementModel
 	editMembers editMembersModel
+	submit      submitChangesetModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -77,6 +78,7 @@ func newRoot(c *api.Client) rootModel {
 		addElement:  newAddElement(c),
 		editEl:      newEditElement(),
 		editMembers: newEditMembers(),
+		submit:      newSubmit(c),
 	}
 }
 
@@ -148,6 +150,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.editEl.input.Width = msg.Width - 4
 		m.editMembers.list.SetSize(msg.Width, msg.Height-5)
 		m.editMembers.input.Width = msg.Width - 4
+		m.submit.commentInput.Width = msg.Width - 4
+		m.submit.tagInput.Width = msg.Width - 4
+		m.submit.tagsList.SetSize(msg.Width, 8)
 
 		m.profile = m.profile.rewrap()
 		m.inbox = m.inbox.rewrap()
@@ -198,6 +203,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.screen = screenComposeChangeset
 		return m, nil
+	case submitConfirmedMsg:
+		m.compose.staged = nil
+		m.compose.refreshList()
+		m.screen = screenMenu
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -230,6 +240,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.editEl, cmd = m.editEl.Update(msg)
 	case screenEditMembers:
 		m.editMembers, cmd = m.editMembers.Update(msg)
+	case screenSubmitChangeset:
+		m.submit, cmd = m.submit.Update(msg)
 	}
 	return m, cmd
 }
@@ -314,6 +326,10 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			m.editMembers = m.editMembers.show(sel)
 		}
 		return m, nil
+	case screenSubmitChangeset:
+		var cmd tea.Cmd
+		m.submit, cmd = m.submit.show(m.compose.staged)
+		return m, cmd
 	}
 	return m, nil
 }
@@ -348,6 +364,8 @@ func (m rootModel) View() string {
 		return m.editEl.View()
 	case screenEditMembers:
 		return m.editMembers.View()
+	case screenSubmitChangeset:
+		return m.submit.View()
 	}
 	return ""
 }
