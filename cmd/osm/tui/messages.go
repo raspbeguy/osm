@@ -191,11 +191,21 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 			return m, nil
 		}
 		delete(m.bodyLoading, msg.id)
+		var cmd tea.Cmd
 		if msg.err == nil && msg.msg != nil {
 			m.bodies[msg.id] = msg.msg
+			// Auto-mark inbox messages as read on first body fetch.
+			if m.direction == dirInbox && !msg.msg.Read {
+				client := m.client
+				id := msg.id
+				cmd = func() tea.Msg {
+					_ = client.MarkRead(programCtx, id, true)
+					return nil
+				}
+			}
 		}
 		m = m.rewrap()
-		return m, nil
+		return m, cmd
 	case messageDeletedMsg:
 		if msg.direction != m.direction {
 			return m, nil
@@ -288,7 +298,7 @@ func (m messagesModel) rewrap() messagesModel {
 	}
 	header := headerStyle.Render(msg.Title) + "\n" +
 		mutedStyle.Render(fmt.Sprintf("from %s • to %s • %s", msg.FromUser, msg.ToUser, msg.SentOn))
-	rendered := msg.Body
+	var rendered string
 	if msg.BodyFormat == "markdown" || msg.BodyFormat == "" {
 		rendered = renderMarkdown(msg.Body, m.viewport.Width)
 	} else {

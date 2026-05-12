@@ -57,11 +57,6 @@ func (m editElementModel) show(e *stagedElement) editElementModel {
 	return m
 }
 
-func (m editElementModel) rewrap() editElementModel {
-	m.refreshList()
-	return m
-}
-
 func (m *editElementModel) refreshList() {
 	if m.target == nil {
 		m.list.SetItems(nil)

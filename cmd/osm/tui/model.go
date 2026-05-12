@@ -224,7 +224,15 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, cmd
 				}
 				return m, nil
-			case screenAddElement, screenEditElement, screenSubmitChangeset:
+			case screenSubmitChangeset:
+				if m.submit.state == submitDone && m.submit.err == nil {
+					m.compose.staged = nil
+					m.compose.refreshList()
+				}
+				m.screen = screenComposeChangeset
+				m.compose = m.compose.rewrap()
+				return m, nil
+			case screenAddElement, screenEditElement:
 				m.screen = screenComposeChangeset
 				m.compose = m.compose.rewrap()
 				return m, nil

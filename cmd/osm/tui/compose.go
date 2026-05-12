@@ -105,7 +105,7 @@ func (m *composeChangesetModel) refreshList() {
 }
 
 func (m composeChangesetModel) selectedStaged() *stagedElement {
-	idx := m.list.Index()
+	idx := m.list.GlobalIndex()
 	if idx < 0 || idx >= len(m.staged) {
 		return nil
 	}
@@ -153,7 +153,7 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 				}
 			}
 		case "d":
-			idx := m.list.Index()
+			idx := m.list.GlobalIndex()
 			if idx >= 0 && idx < len(m.staged) {
 				m.staged = append(m.staged[:idx], m.staged[idx+1:]...)
 				m.refreshList()
