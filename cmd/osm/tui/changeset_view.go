@@ -271,7 +271,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		if m.cs != nil && m.elementsList.FilterState() != list.Filtering {
+		if m.cs != nil && !inFilter(m.elementsList) {
 			switch msg.String() {
 			case "s":
 				m.mode = csModeSummary

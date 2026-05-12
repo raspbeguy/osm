@@ -102,7 +102,7 @@ func (m changesetsModel) Update(msg tea.Msg) (changesetsModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		if m.list.FilterState() != list.Filtering {
+		if !inFilter(m.list) {
 			switch msg.String() {
 			case "r":
 				return m.show()

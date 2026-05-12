@@ -220,15 +220,10 @@ func (c *Client) UpdateTrace(ctx context.Context, id int64, u TraceUpdate) error
 	for _, t := range u.Tags {
 		w.File.Tags = append(w.File.Tags, tagX{Value: t})
 	}
-	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
-	enc := xml.NewEncoder(&buf)
-	if err := enc.Encode(w); err != nil {
+	body, err := marshalXMLDoc(w)
+	if err != nil {
 		return err
 	}
-	if err := enc.Flush(); err != nil {
-		return err
-	}
-	_, err := c.sendBody(ctx, "PUT", fmt.Sprintf("/gpx/%d", id), buf.Bytes(), "application/xml")
+	_, err = c.sendBody(ctx, "PUT", fmt.Sprintf("/gpx/%d", id), body, "application/xml")
 	return err
 }

@@ -5,6 +5,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// inFilter reports whether l is currently capturing keystrokes for filter
+// typing. Use to skip the screen's custom keymap.
+func inFilter(l list.Model) bool {
+	return l.FilterState() == list.Filtering
+}
+
 // kindGlyph returns the single-cell symbol used to represent an OSM element
 // kind in lists and headers: node = ●, way = ━, relation = ⬡.
 func kindGlyph(kind string) string {

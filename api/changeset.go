@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -142,14 +141,5 @@ func buildChangesetCreate(tags osm.Tags) ([]byte, error) {
 	for _, t := range tags {
 		w.CS.Tags = append(w.CS.Tags, xtag{K: t.Key, V: t.Value})
 	}
-	var buf bytes.Buffer
-	buf.WriteString(xml.Header)
-	enc := xml.NewEncoder(&buf)
-	if err := enc.Encode(w); err != nil {
-		return nil, err
-	}
-	if err := enc.Flush(); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return marshalXMLDoc(w)
 }

@@ -129,7 +129,7 @@ func (m composeChangesetModel) Update(msg tea.Msg) (composeChangesetModel, tea.C
 			}
 			return m, nil
 		}
-		if m.list.FilterState() == list.Filtering {
+		if inFilter(m.list) {
 			break
 		}
 		switch msg.String() {

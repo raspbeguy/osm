@@ -22,6 +22,21 @@ const (
 	errBodyCap = 4096
 )
 
+// marshalXMLDoc returns the XML header followed by the encoded value, ready
+// to PUT/POST to the API. Shared by changeset/trace metadata builders.
+func marshalXMLDoc(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	enc := xml.NewEncoder(&buf)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	if err := enc.Flush(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 type Client struct {
 	BaseURL   string
 	HTTP      *http.Client

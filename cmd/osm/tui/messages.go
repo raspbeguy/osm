@@ -238,7 +238,7 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 			}
 			return m, nil
 		}
-		if m.list.FilterState() != list.Filtering {
+		if !inFilter(m.list) {
 			switch msg.String() {
 			case "r":
 				return m.show()
