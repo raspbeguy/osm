@@ -48,6 +48,7 @@ func LoadConfig() (*PersistedConfig, error) {
 }
 
 // SaveConfig writes the config with mode 0600, creating parents with 0700.
+// Atomic via writeAtomic.
 func SaveConfig(c *PersistedConfig) error {
 	p, err := configPath()
 	if err != nil {
@@ -60,8 +61,5 @@ func SaveConfig(c *PersistedConfig) error {
 	if err != nil {
 		return fmt.Errorf("encode config: %w", err)
 	}
-	if err := os.WriteFile(p, b, 0o600); err != nil {
-		return fmt.Errorf("write %s: %w", p, err)
-	}
-	return nil
+	return writeAtomic(p, b)
 }

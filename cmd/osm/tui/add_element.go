@@ -2,6 +2,7 @@ package tui
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -52,17 +53,17 @@ func (m addElementModel) submit() tea.Cmd {
 	}
 	parts := strings.Fields(v)
 	if len(parts) != 2 {
-		err := errParseAddElement
+		err := fmt.Errorf("%w: got %d tokens", errParseAddElement, len(parts))
 		return func() tea.Msg { return addElementLoadedMsg{err: err} }
 	}
 	kind := parts[0]
 	if kind != "node" && kind != "way" && kind != "relation" {
-		err := errParseAddElement
+		err := fmt.Errorf("%w: kind %q is not node|way|relation", errParseAddElement, kind)
 		return func() tea.Msg { return addElementLoadedMsg{err: err} }
 	}
 	id, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		err := errParseAddElement
+		err = fmt.Errorf("%w: invalid id %q", errParseAddElement, parts[1])
 		return func() tea.Msg { return addElementLoadedMsg{err: err} }
 	}
 	client := m.client

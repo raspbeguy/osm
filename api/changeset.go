@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/paulmach/osm"
 	"github.com/raspbeguy/osm/internal/osmchange"
@@ -112,14 +113,18 @@ func (c *Client) ListChangesets(ctx context.Context, f ChangesetFilter) ([]*osm.
 }
 
 // WithChangeset opens a changeset, calls fn, and closes the changeset even if fn errors.
-// Both errors are surfaced via errors.Join so a half-closed changeset is visible to the caller.
+// Both errors are surfaced via errors.Join. The close uses a context that
+// ignores cancellation of ctx so a user-cancelled upload doesn't leave the
+// changeset open on the server.
 func (c *Client) WithChangeset(ctx context.Context, tags osm.Tags, fn func(id osm.ChangesetID) error) (osm.ChangesetID, error) {
 	id, err := c.OpenChangeset(ctx, tags)
 	if err != nil {
 		return 0, err
 	}
 	fnErr := fn(id)
-	closeErr := c.CloseChangeset(ctx, id)
+	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer cancel()
+	closeErr := c.CloseChangeset(closeCtx, id)
 	return id, errors.Join(fnErr, closeErr)
 }
 

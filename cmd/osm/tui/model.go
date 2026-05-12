@@ -190,7 +190,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen = screenMenu
 				return m, nil
 			case screenOutbox:
-				if m.outbox.confirming || m.outbox.list.FilterState() != list.Unfiltered {
+				if m.outbox.list.FilterState() != list.Unfiltered {
 					break
 				}
 				m.screen = screenMenu

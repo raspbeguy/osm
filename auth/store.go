@@ -59,6 +59,7 @@ func RemoveToken() error {
 }
 
 // SaveToken writes the token with mode 0600, creating parents with 0700.
+// Uses write-and-rename so a crash mid-write can't truncate the live file.
 func SaveToken(tok *oauth2.Token) error {
 	p, err := tokenPath()
 	if err != nil {
@@ -71,8 +72,18 @@ func SaveToken(tok *oauth2.Token) error {
 	if err != nil {
 		return fmt.Errorf("encode token: %w", err)
 	}
-	if err := os.WriteFile(p, b, 0o600); err != nil {
-		return fmt.Errorf("write %s: %w", p, err)
+	return writeAtomic(p, b)
+}
+
+// writeAtomic writes b to path via a same-directory temp file + rename.
+func writeAtomic(path string, b []byte) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return fmt.Errorf("write %s: %w", tmp, err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("rename %s: %w", path, err)
 	}
 	return nil
 }
