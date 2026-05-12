@@ -22,6 +22,7 @@ const (
 	screenComposeChangeset
 	screenAddElement
 	screenEditElement
+	screenEditMembers
 	screenSubmitChangeset
 )
 
@@ -141,8 +142,8 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.compose.list.SetSize(msg.Width, msg.Height-3)
 		m.addElement.input.Width = msg.Width - 4
-		m.editEl.viewport.Width = msg.Width
-		m.editEl.viewport.Height = msg.Height - 3
+		m.editEl.list.SetSize(msg.Width, msg.Height-5)
+		m.editEl.input.Width = msg.Width - 4
 
 		m.profile = m.profile.rewrap()
 		m.inbox = m.inbox.rewrap()
@@ -151,7 +152,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
 		m.traces = m.traces.rewrap()
-		m.editEl = m.editEl.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -172,6 +172,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case screenAddElement, screenEditElement, screenSubmitChangeset:
 				m.screen = screenComposeChangeset
+				return m, nil
+			case screenEditMembers:
+				m.screen = screenEditElement
 				return m, nil
 			default:
 				m.screen = screenMenu
