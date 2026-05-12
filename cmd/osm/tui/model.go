@@ -19,7 +19,6 @@ const (
 	screenDoctor
 	screenHistory
 	screenTraces
-	screenItemView
 )
 
 // navigateMsg requests a screen change. refresh asks the destination to
@@ -49,7 +48,6 @@ type rootModel struct {
 	doctor     doctorModel
 	history    historyModel
 	traces     tracesModel
-	itemView   itemViewModel
 }
 
 func newRoot(c *api.Client) rootModel {
@@ -66,7 +64,6 @@ func newRoot(c *api.Client) rootModel {
 		doctor:     newDoctor(c),
 		history:    newHistory(c),
 		traces:     newTraces(c),
-		itemView:   newItemView(),
 	}
 }
 
@@ -106,9 +103,15 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.outbox.viewport.Height = paneH
 
 		m.changesets.list.SetSize(msg.Width, msg.Height-3)
+		csH := msg.Height - 8
+		if csH < 5 {
+			csH = 5
+		}
 		m.csview.viewport.Width = msg.Width
-		m.csview.viewport.Height = msg.Height - 8
-		m.csview.elementsList.SetSize(msg.Width, msg.Height-8)
+		m.csview.viewport.Height = csH
+		m.csview.elementsList.SetSize(leftW, csH)
+		m.csview.detailViewport.Width = rightW
+		m.csview.detailViewport.Height = csH
 
 		m.notes.viewport.Width = msg.Width
 		m.notes.viewport.Height = msg.Height - 6
@@ -151,9 +154,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case screenChangesetView:
 				m.screen = screenChangesets
 				return m, nil
-			case screenItemView:
-				m.screen = screenChangesetView
-				return m, nil
 			default:
 				m.screen = screenMenu
 				return m, nil
@@ -189,8 +189,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.history, cmd = m.history.Update(msg)
 	case screenTraces:
 		m.traces, cmd = m.traces.Update(msg)
-	case screenItemView:
-		m.itemView, cmd = m.itemView.Update(msg)
 	}
 	return m, cmd
 }
@@ -257,9 +255,6 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			return m, cmd
 		}
 		return m, nil
-	case screenItemView:
-		m.itemView = m.itemView.show(m.csview.selectedElement())
-		return m, nil
 	}
 	return m, nil
 }
@@ -286,8 +281,6 @@ func (m rootModel) View() string {
 		return m.history.View()
 	case screenTraces:
 		return m.traces.View()
-	case screenItemView:
-		return m.itemView.View()
 	}
 	return ""
 }

@@ -59,6 +59,39 @@ func (c *Client) GetRelations(ctx context.Context, ids []osm.RelationID) ([]*osm
 	return wrap.Relations, nil
 }
 
+func (c *Client) GetNodeVersion(ctx context.Context, id osm.NodeID, version int) (*osm.Node, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/node/%d/%d", id, version), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Nodes) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Nodes[0], nil
+}
+
+func (c *Client) GetWayVersion(ctx context.Context, id osm.WayID, version int) (*osm.Way, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/way/%d/%d", id, version), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Ways) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Ways[0], nil
+}
+
+func (c *Client) GetRelationVersion(ctx context.Context, id osm.RelationID, version int) (*osm.Relation, error) {
+	var wrap osm.OSM
+	if err := c.getXML(ctx, fmt.Sprintf("/relation/%d/%d", id, version), &wrap); err != nil {
+		return nil, err
+	}
+	if len(wrap.Relations) == 0 {
+		return nil, ErrNotFound
+	}
+	return wrap.Relations[0], nil
+}
+
 func (c *Client) NodeHistory(ctx context.Context, id osm.NodeID) ([]*osm.Node, error) {
 	var wrap osm.OSM
 	if err := c.getXML(ctx, fmt.Sprintf("/node/%d/history", id), &wrap); err != nil {
