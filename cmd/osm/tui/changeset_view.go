@@ -94,7 +94,6 @@ type changesetViewModel struct {
 	elements       []changesetElement
 	mode           csMode
 	focus          int // 0=list, 1=detail (only meaningful in elements mode)
-	lastSelKey     string
 	prevCache      map[string]*prevElement
 	prevLoading    map[string]bool
 }
@@ -131,7 +130,6 @@ func (m changesetViewModel) show(id int64) (changesetViewModel, tea.Cmd) {
 	m.elementsList.SetItems(nil)
 	m.mode = csModeElements
 	m.focus = 0
-	m.lastSelKey = ""
 	m.prevCache = map[string]*prevElement{}
 	m.prevLoading = map[string]bool{}
 	return m, tea.Batch(m.spinner.Tick, m.load(), m.loadXML())
