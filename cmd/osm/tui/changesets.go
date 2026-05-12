@@ -26,9 +26,7 @@ func (i changesetItem) Title() string {
 
 func (i changesetItem) Description() string { return "" }
 
-func (i changesetItem) FilterValue() string {
-	return fmt.Sprintf("%s %d %s %s", i.cs.CreatedAt.Format("2006-01-02"), i.cs.ID, i.cs.User, i.cs.Comment())
-}
+func (i changesetItem) FilterValue() string { return i.Title() }
 
 type changesetsLoadedMsg struct {
 	changesets []*osm.Changeset
