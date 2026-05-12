@@ -13,7 +13,10 @@ var messageCmd = &cobra.Command{Use: "message", Short: "manage your inbox"}
 
 const defaultInboxFormat = "{{if .Read}} {{else}}*{{end}} {{.ID}}\t{{date .SentOn}}\t{{.FromUser}}\t{{.Title}}"
 
-var inboxFormat string
+var (
+	inboxFormat  string
+	outboxFormat string
+)
 
 var msgInboxCmd = &cobra.Command{
 	Use:   "inbox",
@@ -66,7 +69,7 @@ var msgOutboxCmd = &cobra.Command{
 	Short: "list sent messages",
 	Long:  msgInboxCmd.Long,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		format := inboxFormat
+		format := outboxFormat
 		if format == "" {
 			format = defaultInboxFormat
 		}
@@ -133,7 +136,7 @@ var msgDeleteCmd = &cobra.Command{
 
 func init() {
 	msgInboxCmd.Flags().StringVar(&inboxFormat, "format", "", "Go template per message (see --help for fields)")
-	msgOutboxCmd.Flags().StringVar(&inboxFormat, "format", "", "Go template per message (see --help for fields)")
+	msgOutboxCmd.Flags().StringVar(&outboxFormat, "format", "", "Go template per message (see --help for fields)")
 	messageCmd.AddCommand(msgInboxCmd, msgOutboxCmd, msgReadCmd, msgDeleteCmd)
 	rootCmd.AddCommand(messageCmd)
 }

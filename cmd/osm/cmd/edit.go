@@ -44,7 +44,7 @@ func runEditTag(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return withChangeset(c, cmd.Context(), editComment, func(csID osm.ChangesetID) error {
+	return withChangeset(cmd.Context(), c, editComment, func(csID osm.ChangesetID) error {
 		switch kind {
 		case "node":
 			n, err := c.GetNode(cmd.Context(), osm.NodeID(id))
@@ -86,7 +86,7 @@ func runEditDelete(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	return withChangeset(c, cmd.Context(), editComment, func(csID osm.ChangesetID) error {
+	return withChangeset(cmd.Context(), c, editComment, func(csID osm.ChangesetID) error {
 		switch kind {
 		case "node":
 			n, err := c.GetNode(cmd.Context(), osm.NodeID(id))
@@ -151,7 +151,7 @@ func mergeTags(dst *osm.Tags, patch osm.Tags) {
 	}
 }
 
-func withChangeset(c *osmapi.Client, ctx context.Context, comment string, fn func(osm.ChangesetID) error) error {
+func withChangeset(ctx context.Context, c *osmapi.Client, comment string, fn func(osm.ChangesetID) error) error {
 	tags := osm.Tags{{Key: "created_by", Value: "osm-go"}}
 	if comment != "" {
 		tags = append(tags, osm.Tag{Key: "comment", Value: comment})
