@@ -19,7 +19,6 @@ const (
 	screenDoctor
 	screenHistory
 	screenTraces
-	screenTraceView
 	screenItemView
 )
 
@@ -50,7 +49,6 @@ type rootModel struct {
 	doctor     doctorModel
 	history    historyModel
 	traces     tracesModel
-	traceView  traceViewModel
 	itemView   itemViewModel
 }
 
@@ -68,7 +66,6 @@ func newRoot(c *api.Client) rootModel {
 		doctor:     newDoctor(c),
 		history:    newHistory(c),
 		traces:     newTraces(c),
-		traceView:  newTraceView(c),
 		itemView:   newItemView(),
 	}
 }
@@ -125,9 +122,9 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.history.viewport.Height = msg.Height - 6
 		m.history.input.Width = msg.Width - 4
 
-		m.traces.list.SetSize(msg.Width, msg.Height-3)
-		m.traceView.viewport.Width = msg.Width
-		m.traceView.viewport.Height = msg.Height - 8
+		m.traces.list.SetSize(leftW, paneH)
+		m.traces.viewport.Width = rightW
+		m.traces.viewport.Height = paneH
 
 		m.profile = m.profile.rewrap()
 		m.inbox = m.inbox.rewrap()
@@ -135,7 +132,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.csview = m.csview.rewrap()
 		m.notes = m.notes.rewrap()
 		m.history = m.history.rewrap()
-		m.traceView = m.traceView.rewrap()
+		m.traces = m.traces.rewrap()
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -153,9 +150,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case screenChangesetView:
 				m.screen = screenChangesets
-				return m, nil
-			case screenTraceView:
-				m.screen = screenTraces
 				return m, nil
 			case screenItemView:
 				m.screen = screenChangesetView
@@ -195,8 +189,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.history, cmd = m.history.Update(msg)
 	case screenTraces:
 		m.traces, cmd = m.traces.Update(msg)
-	case screenTraceView:
-		m.traceView, cmd = m.traceView.Update(msg)
 	case screenItemView:
 		m.itemView, cmd = m.itemView.Update(msg)
 	}
@@ -265,10 +257,6 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			return m, cmd
 		}
 		return m, nil
-	case screenTraceView:
-		var cmd tea.Cmd
-		m.traceView, cmd = m.traceView.show(msg.itemID)
-		return m, cmd
 	case screenItemView:
 		m.itemView = m.itemView.show(m.csview.selectedElement())
 		return m, nil
@@ -298,8 +286,6 @@ func (m rootModel) View() string {
 		return m.history.View()
 	case screenTraces:
 		return m.traces.View()
-	case screenTraceView:
-		return m.traceView.View()
 	case screenItemView:
 		return m.itemView.View()
 	}
