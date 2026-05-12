@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -87,6 +88,10 @@ func (m addElementModel) Update(msg tea.Msg) (addElementModel, tea.Cmd) {
 			m.err = msg.err
 			return m, nil
 		}
+		if msg.elem == nil {
+			m.err = errors.New("element not found")
+			return m, nil
+		}
 		elem := msg.elem
 		return m, func() tea.Msg { return stagedAddedMsg{elem: elem} }
 	case spinner.TickMsg:
@@ -98,6 +103,7 @@ func (m addElementModel) Update(msg tea.Msg) (addElementModel, tea.Cmd) {
 		return m, cmd
 	case tea.KeyMsg:
 		if msg.Type == tea.KeyEnter && !m.loading {
+			m.err = nil
 			cmd := m.submit()
 			if cmd != nil {
 				m.loading = true
@@ -115,11 +121,12 @@ func (m addElementModel) View() string {
 	if m.loading {
 		return m.spinner.View() + " fetching element..."
 	}
-	body := headerStyle.Render("Add element to changeset") + "\n" +
-		mutedStyle.Render("enter element kind and id (e.g. 'node 11724474473')") + "\n\n" +
-		m.input.View()
+	var sb strings.Builder
+	sb.WriteString(headerStyle.Render("Add element to changeset") + "\n")
+	sb.WriteString(mutedStyle.Render("enter element kind and id (e.g. 'node 11724474473')") + "\n\n")
 	if m.err != nil {
-		body += "\n\n" + errorStyle.Render("error: "+m.err.Error())
+		sb.WriteString(errorStyle.Render("✗ "+m.err.Error()) + "\n\n")
 	}
-	return body + "\n" + footerStyle.Render("enter submit, esc cancel")
+	sb.WriteString(m.input.View())
+	return sb.String() + "\n" + footerStyle.Render("enter submit, esc cancel")
 }
