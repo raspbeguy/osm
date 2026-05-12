@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/raspbeguy/osm/api"
@@ -176,6 +177,12 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case screenInbox, screenOutbox:
 				if m.activeMessages().confirming {
 					break
+				}
+				m.screen = screenMenu
+				return m, nil
+			case screenChangesets:
+				if m.changesets.list.FilterState() != list.Unfiltered {
+					break // let the list cancel/clear the filter
 				}
 				m.screen = screenMenu
 				return m, nil

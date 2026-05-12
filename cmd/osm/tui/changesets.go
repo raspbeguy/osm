@@ -26,7 +26,9 @@ func (i changesetItem) Title() string {
 
 func (i changesetItem) Description() string { return "" }
 
-func (i changesetItem) FilterValue() string { return i.cs.Comment() }
+func (i changesetItem) FilterValue() string {
+	return fmt.Sprintf("%s %d %s %s", i.cs.CreatedAt.Format("2006-01-02"), i.cs.ID, i.cs.User, i.cs.Comment())
+}
 
 type changesetsLoadedMsg struct {
 	changesets []*osm.Changeset
@@ -48,7 +50,7 @@ func newChangesets(c *api.Client) changesetsModel {
 	l.Title = "Your changesets"
 	l.SetShowHelp(false)
 	l.SetShowStatusBar(false)
-	l.SetFilteringEnabled(false)
+	l.SetFilteringEnabled(true)
 	return changesetsModel{client: c, spinner: s, list: l}
 }
 
@@ -93,13 +95,15 @@ func (m changesetsModel) Update(msg tea.Msg) (changesetsModel, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "r":
-			return m.show()
-		case "enter":
-			if sel := m.selected(); sel != nil {
-				return m, func() tea.Msg {
-					return navigateMsg{to: screenChangesetView, itemID: int64(sel.ID), parent: screenChangesets}
+		if m.list.FilterState() != list.Filtering {
+			switch msg.String() {
+			case "r":
+				return m.show()
+			case "enter":
+				if sel := m.selected(); sel != nil {
+					return m, func() tea.Msg {
+						return navigateMsg{to: screenChangesetView, itemID: int64(sel.ID), parent: screenChangesets}
+					}
 				}
 			}
 		}
@@ -116,7 +120,7 @@ func (m changesetsModel) View() string {
 	if m.err != nil {
 		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back, r retry")
 	}
-	return m.list.View() + "\n" + footerStyle.Render("esc back, enter open, r refresh")
+	return m.list.View() + "\n" + footerStyle.Render("esc back, enter open, / filter, r refresh")
 }
 
 func (m changesetsModel) selected() *osm.Changeset {
