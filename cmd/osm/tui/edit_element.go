@@ -151,18 +151,30 @@ func (m editElementModel) commitInput() editElementModel {
 		}
 		for j, t := range m.target.Tags {
 			if t.Key == key {
-				m.target.Tags[j].Value = val
+				if val == "" {
+					m.target.Tags = append(m.target.Tags[:j], m.target.Tags[j+1:]...)
+				} else {
+					m.target.Tags[j].Value = val
+				}
 				m.refreshList()
 				m.state = editTagList
 				m.err = nil
 				return m
 			}
 		}
+		if val == "" {
+			m.err = errors.New("empty value but key does not exist")
+			return m
+		}
 		m.target.Tags = append(m.target.Tags, osm.Tag{Key: key, Value: val})
 	case editTagEditing:
 		idx := m.list.Index()
 		if idx >= 0 && idx < len(m.target.Tags) {
-			m.target.Tags[idx].Value = v
+			if v == "" {
+				m.target.Tags = append(m.target.Tags[:idx], m.target.Tags[idx+1:]...)
+			} else {
+				m.target.Tags[idx].Value = v
+			}
 		}
 	}
 	m.refreshList()
