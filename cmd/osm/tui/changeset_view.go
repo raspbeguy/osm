@@ -97,6 +97,7 @@ type changesetViewModel struct {
 	focus          int // 0=list, 1=detail (only meaningful in elements mode)
 	prevCache      map[string]*prevElement
 	prevLoading    map[string]bool
+	prevErr        map[string]error
 }
 
 func newChangesetView(c *api.Client) changesetViewModel {
@@ -115,6 +116,7 @@ func newChangesetView(c *api.Client) changesetViewModel {
 		detailViewport: viewport.New(40, 20),
 		prevCache:      map[string]*prevElement{},
 		prevLoading:    map[string]bool{},
+		prevErr:        map[string]error{},
 	}
 }
 
@@ -133,6 +135,7 @@ func (m changesetViewModel) show(id int64) (changesetViewModel, tea.Cmd) {
 	m.focus = 0
 	m.prevCache = map[string]*prevElement{}
 	m.prevLoading = map[string]bool{}
+	m.prevErr = map[string]error{}
 	return m, tea.Batch(m.spinner.Tick, m.load(), m.loadXML())
 }
 
@@ -174,6 +177,9 @@ func (m changesetViewModel) fetchPrev(e changesetElement) tea.Cmd {
 		return nil
 	}
 	if m.prevLoading[key] {
+		return nil
+	}
+	if _, ok := m.prevErr[key]; ok {
 		return nil
 	}
 	m.prevLoading[key] = true
@@ -240,7 +246,10 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 			return m, nil
 		}
 		m.xml = msg.xml
-		if elems, err := extractChangesetElements(m.xml); err == nil {
+		elems, perr := extractChangesetElements(m.xml)
+		if perr != nil {
+			m.err = fmt.Errorf("parse osmChange: %w", perr)
+		} else {
 			m.elements = elems
 			items := make([]list.Item, len(elems))
 			for i, e := range elems {
@@ -259,7 +268,10 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 			return m, nil
 		}
 		delete(m.prevLoading, msg.key)
-		if msg.err == nil && msg.prev != nil {
+		if msg.err != nil {
+			m.prevErr[msg.key] = msg.err
+		} else if msg.prev != nil {
+			delete(m.prevErr, msg.key)
 			m.prevCache[msg.key] = msg.prev
 		}
 		m = m.rewrap()
@@ -282,6 +294,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 				m.mode = csModeElements
 				m = m.rewrap()
 				if m.xml == "" && !m.xmlLoading {
+					m.err = nil
 					m.xmlLoading = true
 					return m, tea.Batch(m.spinner.Tick, m.loadXML())
 				}
@@ -290,6 +303,7 @@ func (m changesetViewModel) Update(msg tea.Msg) (changesetViewModel, tea.Cmd) {
 				m.mode = csModeXML
 				m = m.rewrap()
 				if m.xml == "" && !m.xmlLoading {
+					m.err = nil
 					m.xmlLoading = true
 					return m, tea.Batch(m.spinner.Tick, m.loadXML())
 				}
@@ -380,18 +394,23 @@ func (m changesetViewModel) renderDetail() string {
 
 	if e.Action == '~' && e.Version > 1 {
 		key := prevKey(e.Kind, e.ID, e.Version-1)
-		if m.prevLoading[key] {
+		switch {
+		case m.prevLoading[key]:
 			sb.WriteString(mutedStyle.Render("loading previous version...") + "\n")
-		} else if prev, ok := m.prevCache[key]; ok {
-			sb.WriteString(headerStyle.Render(fmt.Sprintf("Diff vs v%d", e.Version-1)) + "\n")
-			diff := formatTagDiff(e.Tags, prev.Tags)
-			if diff == "" {
-				sb.WriteString(mutedStyle.Render("  (no tag changes)") + "\n")
-			} else {
-				sb.WriteString(diff)
-			}
-			if nonTagChanged(e, prev) {
-				sb.WriteString("\n" + mutedStyle.Render("  (geometry, refs, or members also changed)") + "\n")
+		case m.prevErr[key] != nil:
+			sb.WriteString(errorStyle.Render("diff unavailable: "+m.prevErr[key].Error()) + "\n")
+		default:
+			if prev, ok := m.prevCache[key]; ok {
+				sb.WriteString(headerStyle.Render(fmt.Sprintf("Diff vs v%d", e.Version-1)) + "\n")
+				diff := formatTagDiff(e.Tags, prev.Tags)
+				if diff == "" {
+					sb.WriteString(mutedStyle.Render("  (no tag changes)") + "\n")
+				} else {
+					sb.WriteString(diff)
+				}
+				if nonTagChanged(e, prev) {
+					sb.WriteString("\n" + mutedStyle.Render("  (geometry, refs, or members also changed)") + "\n")
+				}
 			}
 		}
 	}
@@ -463,10 +482,10 @@ func (m changesetViewModel) View() string {
 	if m.loading {
 		return m.spinner.View() + " loading changeset..."
 	}
-	if m.err != nil {
-		return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back")
-	}
 	if m.cs == nil {
+		if m.err != nil {
+			return errorStyle.Render("error: "+m.err.Error()) + "\n" + footerStyle.Render("esc back, e retry elements, x retry xml")
+		}
 		return "no changeset\n" + footerStyle.Render("esc back")
 	}
 	closedAt := "(open)"
@@ -484,11 +503,14 @@ func (m changesetViewModel) View() string {
 	var body, footer string
 	switch m.mode {
 	case csModeElements:
-		if m.xmlLoading {
+		switch {
+		case m.xmlLoading:
 			body = m.spinner.View() + " loading elements..."
-		} else if len(m.elements) == 0 {
+		case m.err != nil && len(m.elements) == 0:
+			body = errorStyle.Render("error: " + m.err.Error())
+		case len(m.elements) == 0:
 			body = mutedStyle.Render("(no elements found)")
-		} else {
+		default:
 			leftStyle, rightStyle := paneFocused, paneUnfocused
 			if m.focus == 1 {
 				leftStyle, rightStyle = paneUnfocused, paneFocused
@@ -499,9 +521,12 @@ func (m changesetViewModel) View() string {
 		}
 		footer = "esc back, tab swap pane, h history, s summary, x xml"
 	case csModeXML:
-		if m.xmlLoading {
+		switch {
+		case m.xmlLoading:
 			body = m.spinner.View() + " loading xml..."
-		} else {
+		case m.err != nil && m.xml == "":
+			body = errorStyle.Render("error: " + m.err.Error())
+		default:
 			body = m.viewport.View()
 		}
 		footer = "esc back, s summary, e elements"
