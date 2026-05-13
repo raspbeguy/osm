@@ -107,10 +107,22 @@ Post a discussion comment.
 The
 .B edit
 subcommands open a single-purpose changeset, apply one change, then close it.
-For multi-edit workflows use
+For multi-edit workflows pass
+.B --changeset \fIID\fR
+to reuse an already-open changeset (typically one returned by
+.BR "osm changeset open" ),
+or use
 .B osm tui compose
-or the library's
-.BR WithChangeset .
+for the interactive flow.
+.TP
+.B --comment \fITEXT\fR
+Changeset comment. Only valid when opening a new changeset; conflicts with
+.BR --changeset .
+.TP
+.B --changeset \fIID\fR
+Reuse an existing open changeset. The edit subcommand skips the open and
+close steps; you are responsible for closing the changeset later with
+.BR "osm changeset close" .
 .TP
 .B osm edit tag \fIKIND\fR \fIID\fR \fIKEY\fR=\fIVAL\fR [\fIKEY\fR=\fIVAL\fR...] [\fB--comment \fITEXT\fR]
 Set or update tags. An empty value

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,7 +15,10 @@ import (
 
 var editCmd = &cobra.Command{Use: "edit", Short: "modify osm elements (opens and closes a one-shot changeset)"}
 
-var editComment string
+var (
+	editComment     string
+	editChangesetID int64
+)
 
 var editTagCmd = &cobra.Command{
 	Use:   "tag <node|way|relation> <id> <key=value> [key=value ...]",
@@ -160,6 +164,12 @@ func mergeTags(dst *osm.Tags, patch osm.Tags) {
 }
 
 func withChangeset(ctx context.Context, c *osmapi.Client, comment string, fn func(osm.ChangesetID) error) error {
+	if editChangesetID > 0 {
+		if comment != "" {
+			return errors.New("--comment is only meaningful when opening a new changeset; drop it or omit --changeset")
+		}
+		return fn(osm.ChangesetID(editChangesetID))
+	}
 	tags := osm.Tags{{Key: "created_by", Value: "osm-go"}}
 	if comment != "" {
 		tags = append(tags, osm.Tag{Key: "comment", Value: comment})
@@ -169,7 +179,8 @@ func withChangeset(ctx context.Context, c *osmapi.Client, comment string, fn fun
 }
 
 func init() {
-	editCmd.PersistentFlags().StringVar(&editComment, "comment", "", "changeset comment")
+	editCmd.PersistentFlags().StringVar(&editComment, "comment", "", "changeset comment (only when opening a new changeset)")
+	editCmd.PersistentFlags().Int64Var(&editChangesetID, "changeset", 0, "reuse an already-open changeset; skip the open/close wrap")
 	editCmd.AddCommand(editTagCmd, editDeleteCmd)
 	rootCmd.AddCommand(editCmd)
 }

@@ -73,6 +73,12 @@ osm edit tag node 12345 amenity=cafe name="Café Z" --comment "rename"
 osm edit tag node 12345 amenity=          # empty value deletes the key
 osm edit delete way 99999 --comment "obsolete"
 
+# batch edits under a single user-managed changeset
+cs=$(osm changeset open --comment "downtown survey")
+osm edit tag --changeset $cs node 12345 name="Café Z"
+osm edit tag --changeset $cs node 12346 amenity=bench
+osm changeset close $cs
+
 osm note create --lat 48.85 --lon 2.35 "missing footway"
 osm note comment 12345 "still there"
 osm note close 12345
