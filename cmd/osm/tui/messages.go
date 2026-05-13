@@ -73,6 +73,7 @@ type messagesModel struct {
 	viewport    viewport.Model
 	bodies      map[int64]*api.Message
 	bodyLoading map[int64]bool
+	bodyErr     map[int64]error
 	err         error
 	loading     bool
 	deleting    bool
@@ -97,6 +98,7 @@ func newMessages(c *api.Client, dir messagesDirection) messagesModel {
 		viewport:    viewport.New(40, 20),
 		bodies:      map[int64]*api.Message{},
 		bodyLoading: map[int64]bool{},
+		bodyErr:     map[int64]error{},
 	}
 }
 
@@ -162,6 +164,9 @@ func (m messagesModel) ensureBody(id int64) tea.Cmd {
 	if m.bodyLoading[id] {
 		return nil
 	}
+	if _, ok := m.bodyErr[id]; ok {
+		return nil
+	}
 	m.bodyLoading[id] = true
 	return tea.Batch(m.spinner.Tick, m.fetchBody(id))
 }
@@ -192,12 +197,21 @@ func (m messagesModel) Update(msg tea.Msg) (messagesModel, tea.Cmd) {
 		}
 		delete(m.bodyLoading, msg.id)
 		var cmd tea.Cmd
-		if msg.err == nil && msg.msg != nil {
+		if msg.err != nil {
+			m.bodyErr[msg.id] = msg.err
+		} else if msg.msg != nil {
+			delete(m.bodyErr, msg.id)
 			m.bodies[msg.id] = msg.msg
-			// Auto-mark inbox messages as read on first body fetch.
 			if m.direction == dirInbox && !msg.msg.Read {
 				client := m.client
 				id := msg.id
+				msg.msg.Read = true
+				for _, it := range m.list.Items() {
+					if mi, ok := it.(messageItem); ok && mi.msg.ID == id {
+						mi.msg.Read = true
+						break
+					}
+				}
 				cmd = func() tea.Msg {
 					_ = client.MarkRead(programCtx, id, true)
 					return nil
@@ -289,6 +303,10 @@ func (m messagesModel) rewrap() messagesModel {
 	}
 	if m.bodyLoading[id] {
 		m.viewport.SetContent(m.spinner.View() + " loading...")
+		return m
+	}
+	if err, ok := m.bodyErr[id]; ok {
+		m.viewport.SetContent(errorStyle.Render("error: " + err.Error()))
 		return m
 	}
 	msg, ok := m.bodies[id]
