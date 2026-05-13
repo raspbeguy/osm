@@ -1,9 +1,11 @@
 package tui
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -25,8 +27,9 @@ const (
 )
 
 type changesetSubmittedMsg struct {
-	csID osm.ChangesetID
-	err  error
+	csID      osm.ChangesetID
+	uploadErr error
+	closeErr  error
 }
 
 type submitConfirmedMsg struct{}
@@ -47,6 +50,8 @@ type submitChangesetModel struct {
 	state        submitState
 	spinner      spinner.Model
 	resultID     osm.ChangesetID
+	uploadErr    error
+	closeErr     error
 	err          error
 }
 
@@ -83,6 +88,8 @@ func (m submitChangesetModel) show(staged []*stagedElement) (submitChangesetMode
 	m.refreshTags()
 	m.state = submitFocusComment
 	m.err = nil
+	m.uploadErr = nil
+	m.closeErr = nil
 	m.resultID = 0
 	return m, textinput.Blink
 }
@@ -100,7 +107,13 @@ func (m submitChangesetModel) Update(msg tea.Msg) (submitChangesetModel, tea.Cmd
 	case changesetSubmittedMsg:
 		m.state = submitDone
 		m.resultID = msg.csID
-		m.err = msg.err
+		m.uploadErr = msg.uploadErr
+		m.closeErr = msg.closeErr
+		if msg.uploadErr != nil {
+			m.err = msg.uploadErr
+		} else {
+			m.err = msg.closeErr
+		}
 		return m, nil
 	case spinner.TickMsg:
 		if m.state != submitSending {
@@ -208,11 +221,13 @@ func (m submitChangesetModel) beginSubmit(comment string) (submitChangesetModel,
 	tags = append(tags, m.customTags...)
 	m.state = submitSending
 	m.err = nil
+	m.uploadErr = nil
+	m.closeErr = nil
 	client := m.client
 	staged := cloneStaged(m.staged)
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
-		csID, err := submitChangeset(client, tags, staged)
-		return changesetSubmittedMsg{csID: csID, err: err}
+		csID, uploadErr, closeErr := submitChangeset(client, tags, staged)
+		return changesetSubmittedMsg{csID: csID, uploadErr: uploadErr, closeErr: closeErr}
 	})
 }
 
@@ -230,15 +245,24 @@ func cloneStaged(in []*stagedElement) []*stagedElement {
 	return out
 }
 
-func submitChangeset(c *api.Client, tags osm.Tags, staged []*stagedElement) (osm.ChangesetID, error) {
+func submitChangeset(c *api.Client, tags osm.Tags, staged []*stagedElement) (osm.ChangesetID, error, error) {
 	ctx := programCtx
-	return c.WithChangeset(ctx, tags, func(csID osm.ChangesetID) error {
-		change := buildChange(staged)
-		if _, err := c.UploadChange(ctx, csID, change); err != nil {
-			return fmt.Errorf("upload change: %w", err)
-		}
-		return nil
-	})
+	csID, err := c.OpenChangeset(ctx, tags)
+	if err != nil {
+		return 0, fmt.Errorf("open changeset: %w", err), nil
+	}
+	change := buildChange(staged)
+	var uploadErr error
+	if _, err := c.UploadChange(ctx, csID, change); err != nil {
+		uploadErr = fmt.Errorf("upload change: %w", err)
+	}
+	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer cancel()
+	var closeErr error
+	if err := c.CloseChangeset(closeCtx, csID); err != nil {
+		closeErr = fmt.Errorf("close changeset: %w", err)
+	}
+	return csID, uploadErr, closeErr
 }
 
 func buildChange(staged []*stagedElement) *osm.Change {
@@ -289,18 +313,29 @@ func (m submitChangesetModel) View() string {
 		return m.spinner.View() + " submitting changeset..."
 	}
 	if m.state == submitDone {
-		if m.err != nil {
-			head := errorStyle.Render("submit failed: " + m.err.Error())
-			if m.resultID != 0 {
-				head += "\n" + mutedStyle.Render(fmt.Sprintf("changeset %d may still be open on the server", m.resultID))
-			}
-			return head + "\n\n" +
-				mutedStyle.Render("staged changes are preserved") + "\n" +
-				footerStyle.Render("esc back")
+		if m.uploadErr == nil && m.closeErr == nil {
+			return headerStyle.Render(fmt.Sprintf("changeset %d created", m.resultID)) + "\n\n" +
+				mutedStyle.Render("staged changes will be cleared on continue") + "\n" +
+				footerStyle.Render("enter continue")
 		}
-		return headerStyle.Render(fmt.Sprintf("changeset %d created", m.resultID)) + "\n\n" +
-			mutedStyle.Render("staged changes will be cleared on continue") + "\n" +
-			footerStyle.Render("enter continue")
+		var head string
+		switch {
+		case m.resultID == 0:
+			head = errorStyle.Render("submit failed: " + m.uploadErr.Error())
+		case m.uploadErr != nil && m.closeErr != nil:
+			head = errorStyle.Render("submit failed: "+m.uploadErr.Error()) + "\n" +
+				errorStyle.Render("close also failed: "+m.closeErr.Error()) + "\n" +
+				mutedStyle.Render(fmt.Sprintf("changeset %d may still be open on the server", m.resultID))
+		case m.uploadErr != nil:
+			head = errorStyle.Render("upload failed: "+m.uploadErr.Error()) + "\n" +
+				mutedStyle.Render(fmt.Sprintf("changeset %d was closed without changes", m.resultID))
+		default:
+			head = errorStyle.Render("close failed: "+m.closeErr.Error()) + "\n" +
+				mutedStyle.Render(fmt.Sprintf("changeset %d uploaded but may still be open on the server", m.resultID))
+		}
+		return head + "\n\n" +
+			mutedStyle.Render("staged changes are preserved") + "\n" +
+			footerStyle.Render("esc back")
 	}
 	var sb strings.Builder
 	sb.WriteString(headerStyle.Render("Submit changeset") + "\n")
