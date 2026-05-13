@@ -381,7 +381,7 @@ func (m changesetViewModel) renderDetail() string {
 		action = "deleted"
 	}
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("%c %s %d v%d", e.Action, kindGlyph(e.Kind), e.ID, e.Version)) + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("%c %s %d v%d", e.Action, kindLabel(e.Kind), e.ID, e.Version)) + "\n")
 	sb.WriteString(mutedStyle.Render(action) + "\n\n")
 
 	if len(e.Tags) > 0 {

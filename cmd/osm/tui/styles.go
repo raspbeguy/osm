@@ -25,6 +25,15 @@ func kindGlyph(kind string) string {
 	return "?"
 }
 
+// kindLabel returns the glyph followed by the kind name. Use in detail views
+// and headers so a user wondering what a glyph means can find it spelled out.
+func kindLabel(kind string) string {
+	if kind == "" {
+		return "?"
+	}
+	return kindGlyph(kind) + " " + kind
+}
+
 // newCompactDelegate returns a list delegate that renders each item on a
 // single line: title only, no description, no inter-item spacing.
 func newCompactDelegate() list.DefaultDelegate {

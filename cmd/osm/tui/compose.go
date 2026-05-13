@@ -223,7 +223,7 @@ func renderStagedElement(e *stagedElement) string {
 	if e.Action == stagedCreate {
 		action = "create"
 	}
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("%s %s %d", action, kindGlyph(e.Kind), e.ID)) + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("%s %s %d", action, kindLabel(e.Kind), e.ID)) + "\n")
 	if e.Version > 0 {
 		sb.WriteString(mutedStyle.Render(fmt.Sprintf("version %d", e.Version)) + "\n")
 	}
