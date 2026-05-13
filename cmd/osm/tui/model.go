@@ -26,7 +26,6 @@ const (
 	screenComposeChangeset
 	screenAddElement
 	screenEditElement
-	screenEditMembers
 	screenSubmitChangeset
 )
 
@@ -58,32 +57,30 @@ type rootModel struct {
 	history     historyModel
 	traces      tracesModel
 	compose     composeChangesetModel
-	addElement  addElementModel
-	editEl      editElementModel
-	editMembers editMembersModel
-	submit      submitChangesetModel
+	addElement addElementModel
+	editEl     editElementModel
+	submit     submitChangesetModel
 }
 
 func newRoot(c *api.Client, startCmd tea.Cmd) rootModel {
 	return rootModel{
-		client:      c,
-		startCmd:    startCmd,
-		screen:      screenMenu,
-		menu:        newMenu(),
-		profile:     newProfile(c),
-		inbox:       newMessages(c, dirInbox),
-		outbox:      newMessages(c, dirOutbox),
-		changesets:  newChangesets(c),
-		csview:      newChangesetView(c),
-		notes:       newNotes(c),
-		doctor:      newDoctor(c),
-		history:     newHistory(c),
-		traces:      newTraces(c),
-		compose:     newCompose(c),
-		addElement:  newAddElement(c),
-		editEl:      newEditElement(),
-		editMembers: newEditMembers(),
-		submit:      newSubmit(c),
+		client:     c,
+		startCmd:   startCmd,
+		screen:     screenMenu,
+		menu:       newMenu(),
+		profile:    newProfile(c),
+		inbox:      newMessages(c, dirInbox),
+		outbox:     newMessages(c, dirOutbox),
+		changesets: newChangesets(c),
+		csview:     newChangesetView(c),
+		notes:      newNotes(c),
+		doctor:     newDoctor(c),
+		history:    newHistory(c),
+		traces:     newTraces(c),
+		compose:    newCompose(c),
+		addElement: newAddElement(c),
+		editEl:     newEditElement(),
+		submit:     newSubmit(c),
 	}
 }
 
@@ -158,10 +155,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.compose.viewport.Width = rightW
 		m.compose.viewport.Height = paneH
 		m.addElement.input.Width = msg.Width - 4
-		m.editEl.list.SetSize(msg.Width, availH-5)
-		m.editEl.input.Width = msg.Width - 4
-		m.editMembers.list.SetSize(msg.Width, availH-5)
-		m.editMembers.input.Width = msg.Width - 4
+		m.editEl.setSize(msg.Width, paneH)
 		m.submit.commentInput.Width = msg.Width - 4
 		m.submit.tagInput.Width = msg.Width - 4
 		m.submit.tagsList.SetSize(msg.Width, 8)
@@ -240,17 +234,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.compose = m.compose.rewrap()
 				return m, nil
 			case screenEditElement:
-				if m.editEl.state != editTagList {
+				if m.editEl.state != editList {
 					break
 				}
 				m.screen = screenComposeChangeset
 				m.compose = m.compose.rewrap()
-				return m, nil
-			case screenEditMembers:
-				if m.editMembers.state != editMemberList {
-					break
-				}
-				m.screen = screenEditElement
 				return m, nil
 			default:
 				m.screen = screenMenu
@@ -307,8 +295,6 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.addElement, cmd = m.addElement.Update(msg)
 	case screenEditElement:
 		m.editEl, cmd = m.editEl.Update(msg)
-	case screenEditMembers:
-		m.editMembers, cmd = m.editMembers.Update(msg)
 	case screenSubmitChangeset:
 		m.submit, cmd = m.submit.Update(msg)
 	}
@@ -383,11 +369,6 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 			m.editEl = m.editEl.show(sel)
 		}
 		return m, nil
-	case screenEditMembers:
-		if sel := m.compose.selectedStaged(); sel != nil {
-			m.editMembers = m.editMembers.show(sel)
-		}
-		return m, nil
 	case screenSubmitChangeset:
 		var cmd tea.Cmd
 		m.submit, cmd = m.submit.show(m.compose.staged)
@@ -426,8 +407,6 @@ func (m rootModel) breadcrumb() string {
 		parts = append(parts, "New changeset", "Add element")
 	case screenEditElement:
 		parts = append(parts, "New changeset", composedElementLabel(&m))
-	case screenEditMembers:
-		parts = append(parts, "New changeset", composedElementLabel(&m), "Members")
 	case screenSubmitChangeset:
 		parts = append(parts, "New changeset", "Submit")
 	}
@@ -474,8 +453,6 @@ func (m rootModel) bodyView() string {
 		return m.addElement.View()
 	case screenEditElement:
 		return m.editEl.View()
-	case screenEditMembers:
-		return m.editMembers.View()
 	case screenSubmitChangeset:
 		return m.submit.View()
 	}
