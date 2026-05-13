@@ -141,7 +141,7 @@ func (c *Client) GetTraceData(ctx context.Context, id int64) (string, error) {
 		return string(b), err
 	default:
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, errBodyCap))
-		return "", mapHTTPError(resp.StatusCode, resp.Status, string(body))
+		return "", fmt.Errorf("GET /gpx/%d/data: %w", id, mapHTTPError(resp.StatusCode, resp.Status, string(body)))
 	}
 }
 
