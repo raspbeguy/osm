@@ -41,8 +41,7 @@ type stagedAddedMsg struct {
 }
 
 type stagedItem struct {
-	idx int
-	e   *stagedElement
+	e *stagedElement
 }
 
 func (i stagedItem) Title() string {
@@ -100,7 +99,7 @@ func (m composeChangesetModel) rewrap() composeChangesetModel {
 func (m *composeChangesetModel) refreshList() {
 	items := make([]list.Item, len(m.staged))
 	for i, e := range m.staged {
-		items[i] = stagedItem{idx: i, e: e}
+		items[i] = stagedItem{e: e}
 	}
 	m.list.SetItems(items)
 }
