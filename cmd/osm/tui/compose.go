@@ -81,6 +81,7 @@ func (m composeChangesetModel) Init() tea.Cmd { return nil }
 
 func (m composeChangesetModel) show() (composeChangesetModel, tea.Cmd) {
 	m.err = nil
+	m.clearConfirming = false
 	m.refreshList()
 	m = m.rewrap()
 	return m, nil

@@ -208,7 +208,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.screen = screenMenu
 				return m, nil
 			case screenComposeChangeset:
-				if m.compose.list.FilterState() != list.Unfiltered {
+				if m.compose.list.FilterState() != list.Unfiltered || m.compose.clearConfirming {
 					break
 				}
 				m.screen = screenMenu
