@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,9 +58,12 @@ func SaveConfig(c *PersistedConfig) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(p), err)
 	}
-	b, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(c); err != nil {
 		return fmt.Errorf("encode config: %w", err)
 	}
-	return writeAtomic(p, b)
+	return writeAtomic(p, buf.Bytes())
 }

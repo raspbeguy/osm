@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -68,11 +69,13 @@ func SaveToken(tok *oauth2.Token) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(p), err)
 	}
-	b, err := json.Marshal(tok)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(tok); err != nil {
 		return fmt.Errorf("encode token: %w", err)
 	}
-	return writeAtomic(p, b)
+	return writeAtomic(p, buf.Bytes())
 }
 
 // writeAtomic writes b to path via a same-directory temp file + rename.
