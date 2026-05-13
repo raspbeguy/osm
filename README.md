@@ -23,6 +23,15 @@ go build -o osm ./cmd/osm
 
 Go 1.26 or newer.
 
+For a leaner binary without the TUI subcommand (drops ~10 MB of TUI deps):
+
+```
+go build -tags notui -o osm ./cmd/osm
+```
+
+The `tui` subcommand still exists in that build but prints a message telling
+you to rebuild without the tag.
+
 ## First login
 
 OAuth 2.0 has been mandatory since June 2024, so you need a client ID. Register
