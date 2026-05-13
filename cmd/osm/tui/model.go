@@ -155,7 +155,7 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.compose.viewport.Width = rightW
 		m.compose.viewport.Height = paneH
 		m.addElement.input.Width = msg.Width - 4
-		m.editEl.setSize(msg.Width, paneH)
+		m.editEl.setSize(msg.Width, availH-5)
 		m.submit.commentInput.Width = msg.Width - 4
 		m.submit.tagInput.Width = msg.Width - 4
 		m.submit.tagsList.SetSize(msg.Width, 8)

@@ -108,7 +108,6 @@ func (m *editElementModel) resizeLists() {
 		return
 	}
 	m.tagsList.SetSize(m.width, m.height)
-	m.membersList.SetSize(0, m.height)
 }
 
 func (m *editElementModel) refreshLists() {
