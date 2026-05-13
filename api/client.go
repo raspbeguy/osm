@@ -14,7 +14,7 @@ import (
 const (
 	DefaultBaseURL   = "https://api.openstreetmap.org/api/0.6"
 	SandboxBaseURL   = "https://master.apis.dev.openstreetmap.org/api/0.6"
-	DefaultUserAgent = "osm-go (https://github.com/raspbeguy/osm)"
+	DefaultUserAgent = "github.com/raspbeguy/osm/api"
 
 	// errBodyCap is the max bytes read from an error response body. Larger
 	// helps debug verbose server errors, but keeps memory bounded on hostile

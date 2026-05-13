@@ -7,14 +7,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/raspbeguy/osm/cmd/osm/cmd"
+	"github.com/raspbeguy/osm/cmd/osmctl/cmd"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	if err := cmd.ExecuteContext(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, "osm:", err)
+		fmt.Fprintln(os.Stderr, "osmctl:", err)
 		os.Exit(1)
 	}
 }

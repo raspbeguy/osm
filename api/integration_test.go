@@ -19,7 +19,7 @@ import (
 
 // TestSandboxElementRoundtrip exercises create/modify/delete against a real
 // OSM sandbox. Skipped unless OSM_API_URL and OSM_CLIENT_ID are set and a token
-// has been saved (run `osm login` first).
+// has been saved (run `osmctl login` first).
 func TestSandboxElementRoundtrip(t *testing.T) {
 	baseURL := os.Getenv("OSM_API_URL")
 	clientID := os.Getenv("OSM_CLIENT_ID")
@@ -29,7 +29,7 @@ func TestSandboxElementRoundtrip(t *testing.T) {
 
 	tok, err := auth.LoadToken()
 	if err != nil {
-		t.Fatalf("load token (run `osm login` first): %v", err)
+		t.Fatalf("load token (run `osmctl login` first): %v", err)
 	}
 
 	authURL, tokenURL := deriveOAuthEndpoints(baseURL)
@@ -47,7 +47,7 @@ func TestSandboxElementRoundtrip(t *testing.T) {
 	c.BaseURL = baseURL
 
 	csID, err := c.OpenChangeset(ctx, osm.Tags{
-		{Key: "created_by", Value: "osm-go integration test"},
+		{Key: "created_by", Value: "osmctl integration test"},
 		{Key: "comment", Value: "element roundtrip"},
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func TestSandboxElementRoundtrip(t *testing.T) {
 
 	create := &osm.Change{
 		Version:   "0.6",
-		Generator: "osm-go integration test",
+		Generator: "osmctl integration test",
 		Create: &osm.OSM{
 			Nodes: osm.Nodes{{
 				ID: -1, Version: 0, Lat: 48.581541, Lon: 6.945972, Visible: true,

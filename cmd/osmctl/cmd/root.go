@@ -12,6 +12,7 @@ import (
 
 	"github.com/raspbeguy/osm/api"
 	"github.com/raspbeguy/osm/auth"
+	"github.com/raspbeguy/osm/internal/version"
 )
 
 var (
@@ -20,7 +21,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "osm",
+	Use:           "osmctl",
 	Short:         "command-line client for openstreetmap",
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -71,7 +72,7 @@ func clientID() (string, error) {
 	if c, err := auth.LoadConfig(); err == nil && c.ClientID != "" {
 		return c.ClientID, nil
 	}
-	return "", errors.New("no oauth2 client id; pass --client-id, set OSM_CLIENT_ID, or run `osm login` once with one of those to persist it (register an app at https://www.openstreetmap.org/oauth2/applications)")
+	return "", errors.New("no oauth2 client id; pass --client-id, set OSM_CLIENT_ID, or run `osmctl login` once with one of those to persist it (register an app at https://www.openstreetmap.org/oauth2/applications)")
 }
 
 func authConfig() (auth.Config, error) {
@@ -96,7 +97,7 @@ func newAPIClient(ctx context.Context) (*api.Client, error) {
 	tok, err := auth.LoadToken()
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("not logged in; run `osm login` first")
+			return nil, fmt.Errorf("not logged in; run `osmctl login` first")
 		}
 		return nil, err
 	}
@@ -106,5 +107,6 @@ func newAPIClient(ctx context.Context) (*api.Client, error) {
 	}
 	c := api.NewClient(auth.HTTPClient(ctx, cfg, tok))
 	c.BaseURL = apiBaseURL()
+	c.UserAgent = version.UserAgent
 	return c, nil
 }

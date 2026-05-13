@@ -14,6 +14,7 @@ import (
 	"github.com/paulmach/osm"
 
 	"github.com/raspbeguy/osm/api"
+	"github.com/raspbeguy/osm/internal/version"
 )
 
 type submitState int
@@ -215,7 +216,7 @@ func (m submitChangesetModel) commitTagInput() submitChangesetModel {
 
 func (m submitChangesetModel) beginSubmit(comment string) (submitChangesetModel, tea.Cmd) {
 	tags := osm.Tags{
-		{Key: "created_by", Value: "osm-tui " + osmTUIVersion},
+		{Key: "created_by", Value: version.CreatedBy("tui")},
 		{Key: "comment", Value: comment},
 	}
 	tags = append(tags, m.customTags...)
@@ -268,7 +269,7 @@ func submitChangeset(c *api.Client, tags osm.Tags, staged []*stagedElement) (osm
 func buildChange(staged []*stagedElement) *osm.Change {
 	change := &osm.Change{
 		Version:   "0.6",
-		Generator: "osm-tui " + osmTUIVersion,
+		Generator: version.CreatedBy("tui"),
 	}
 	ensureCreate := func() *osm.OSM {
 		if change.Create == nil {
@@ -358,7 +359,7 @@ func (m submitChangesetModel) View() string {
 	} else {
 		sb.WriteString(m.tagsList.View() + "\n")
 	}
-	sb.WriteString("\n" + mutedStyle.Render("created_by=osm-tui "+osmTUIVersion+" is added automatically") + "\n")
+	sb.WriteString("\n" + mutedStyle.Render("created_by="+version.CreatedBy("tui")+" is added automatically") + "\n")
 
 	var footer string
 	switch m.state {

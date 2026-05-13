@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	osmapi "github.com/raspbeguy/osm/api"
+	"github.com/raspbeguy/osm/internal/version"
 )
 
 var changesetCmd = &cobra.Command{
@@ -116,7 +117,7 @@ var csOpenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		tags := osm.Tags{{Key: "created_by", Value: "osm-go"}}
+		tags := osm.Tags{{Key: "created_by", Value: version.CreatedBy("cli")}}
 		if csOpenComment != "" {
 			tags = append(tags, osm.Tag{Key: "comment", Value: csOpenComment})
 		}

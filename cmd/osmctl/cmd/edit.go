@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	osmapi "github.com/raspbeguy/osm/api"
+	"github.com/raspbeguy/osm/internal/version"
 )
 
 var editCmd = &cobra.Command{Use: "edit", Short: "modify osm elements (opens and closes a one-shot changeset)"}
@@ -170,7 +171,7 @@ func withChangeset(ctx context.Context, c *osmapi.Client, comment string, fn fun
 		}
 		return fn(osm.ChangesetID(editChangesetID))
 	}
-	tags := osm.Tags{{Key: "created_by", Value: "osm-go"}}
+	tags := osm.Tags{{Key: "created_by", Value: version.CreatedBy("cli")}}
 	if comment != "" {
 		tags = append(tags, osm.Tag{Key: "comment", Value: comment})
 	}

@@ -14,9 +14,6 @@ import (
 	"github.com/raspbeguy/osm/api"
 )
 
-// osmTUIVersion is stamped into the auto-added created_by tag on submission.
-const osmTUIVersion = "0.1.0"
-
 type stagedAction int
 
 const (

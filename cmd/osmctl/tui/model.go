@@ -379,7 +379,7 @@ func (m rootModel) handleNavigate(msg navigateMsg) (rootModel, tea.Cmd) {
 
 // breadcrumb returns the navigation trail shown at the top of every screen.
 func (m rootModel) breadcrumb() string {
-	parts := []string{"osm"}
+	parts := []string{"osmctl"}
 	switch m.screen {
 	case screenMenu:
 		// just the root

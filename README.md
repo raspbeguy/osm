@@ -1,16 +1,17 @@
 # osm
 
-A command-line client and TUI for OpenStreetMap, plus the Go libraries
-underneath. The libraries fill a gap in the existing ecosystem: `paulmach/osm`
-covers the read side and file parsing, but there is no Go equivalent of
-Python's `osmapi` for authenticated writes. This module adds OAuth2 PKCE, the
-full API v0.6 client surface (changesets, elements, notes, messages, traces,
-user preferences), and an interactive TUI on top.
+A Go module for OpenStreetMap with two faces: the `osmctl` binary (CLI + TUI)
+and the importable Go libraries underneath. The libraries fill a gap in the
+existing ecosystem: `paulmach/osm` covers the read side and file parsing, but
+there is no Go equivalent of Python's `osmapi` for authenticated writes. This
+module adds OAuth2 PKCE, the full API v0.6 client surface (changesets,
+elements, notes, messages, traces, user preferences), and an interactive TUI
+on top.
 
 ## Install
 
 ```
-go install github.com/raspbeguy/osm/cmd/osm@latest
+go install github.com/raspbeguy/osm/cmd/osmctl@latest
 ```
 
 Or build from a checkout:
@@ -18,7 +19,7 @@ Or build from a checkout:
 ```
 git clone https://github.com/raspbeguy/osm
 cd osm
-go build -o osm ./cmd/osm
+go build -o osmctl ./cmd/osmctl
 ```
 
 Go 1.26 or newer.
@@ -26,7 +27,7 @@ Go 1.26 or newer.
 For a leaner binary without the TUI subcommand (drops ~10 MB of TUI deps):
 
 ```
-go build -tags notui -o osm ./cmd/osm
+go build -tags notui -o osmctl ./cmd/osmctl
 ```
 
 The `tui` subcommand still exists in that build but prints a message telling
@@ -45,54 +46,54 @@ an application at <https://www.openstreetmap.org/oauth2/applications> with:
 Then log in. The client id can be passed once and gets remembered:
 
 ```
-osm --client-id <your-client-id> login
+osmctl --client-id <your-client-id> login
 ```
 
 The browser opens, you approve, and the token lands in
-`$XDG_CONFIG_HOME/osm/token.json` (mode 0600). After that, `osm` commands work
-without `--client-id`; it lives in `$XDG_CONFIG_HOME/osm/config.json`.
+`$XDG_CONFIG_HOME/osm/token.json` (mode 0600). After that, `osmctl` commands
+work without `--client-id`; it lives in `$XDG_CONFIG_HOME/osm/config.json`.
 
 The CLI talks to production by default. To target the sandbox, pass
 `--api https://master.apis.dev.openstreetmap.org/api/0.6` or set `OSM_API_URL`.
-The OAuth endpoints are derived from the API host, so the same `osm login`
+The OAuth endpoints are derived from the API host, so the same `osmctl login`
 command works against any instance.
 
 ## CLI examples
 
 ```
-osm whoami
-osm doctor                                 # server caps + token scopes
+osmctl whoami
+osmctl doctor                                 # server caps + token scopes
 
-osm changeset list --mine
-osm changeset list --mine --format '{{.ID}} {{.Comment}}'
-osm changeset list --mine --format '{{json .}}'
-osm changeset show 148548710
-osm changeset download 148548710           # raw osmChange XML
+osmctl changeset list --mine
+osmctl changeset list --mine --format '{{.ID}} {{.Comment}}'
+osmctl changeset list --mine --format '{{json .}}'
+osmctl changeset show 148548710
+osmctl changeset download 148548710           # raw osmChange XML
 
-osm edit tag node 12345 amenity=cafe name="Café Z" --comment "rename"
-osm edit tag node 12345 amenity=          # empty value deletes the key
-osm edit delete way 99999 --comment "obsolete"
+osmctl edit tag node 12345 amenity=cafe name="Café Z" --comment "rename"
+osmctl edit tag node 12345 amenity=           # empty value deletes the key
+osmctl edit delete way 99999 --comment "obsolete"
 
 # batch edits under a single user-managed changeset
-cs=$(osm changeset open --comment "downtown survey")
-osm edit tag --changeset $cs node 12345 name="Café Z"
-osm edit tag --changeset $cs node 12346 amenity=bench
-osm changeset close $cs
+cs=$(osmctl changeset open --comment "downtown survey")
+osmctl edit tag --changeset $cs node 12345 name="Café Z"
+osmctl edit tag --changeset $cs node 12346 amenity=bench
+osmctl changeset close $cs
 
-osm note create --lat 48.85 --lon 2.35 "missing footway"
-osm note comment 12345 "still there"
-osm note close 12345
+osmctl note create --lat 48.85 --lon 2.35 "missing footway"
+osmctl note comment 12345 "still there"
+osmctl note close 12345
 
-osm message inbox
-osm message read 4242
-osm message delete 4242
+osmctl message inbox
+osmctl message read 4242
+osmctl message delete 4242
 
-osm trace upload run.gpx --description "morning run" --tags "run,paris"
-osm trace list --format '{{.ID}} {{.Name}}'
-osm trace data 9999 > backup.gpx
+osmctl trace upload run.gpx --description "morning run" --tags "run,paris"
+osmctl trace list --format '{{.ID}} {{.Name}}'
+osmctl trace data 9999 > backup.gpx
 
-osm history way 12345
-osm map -1.5,52.0,-1.4,52.1 > area.osm
+osmctl history way 12345
+osmctl map -1.5,52.0,-1.4,52.1 > area.osm
 ```
 
 `changeset list` and `message inbox|outbox` accept `--format` with a Go
@@ -103,19 +104,19 @@ JSONL, `{{csv .ID .User}}` for CSV rows).
 ## TUI
 
 ```
-osm tui
+osmctl tui
 ```
 
 Browse and edit interactively. The TUI knows how to deep-link, so you can jump
 straight to a screen:
 
 ```
-osm tui changesets
-osm tui changeset 148548710
-osm tui inbox
-osm tui notes
-osm tui history way 12345
-osm tui compose                            # build a new changeset
+osmctl tui changesets
+osmctl tui changeset 148548710
+osmctl tui inbox
+osmctl tui notes
+osmctl tui history way 12345
+osmctl tui compose                            # build a new changeset
 ```
 
 Common keys across screens: `esc` goes back, `tab` swaps focus between split
@@ -185,9 +186,9 @@ upload doesn't leave a changeset open on the server.
 ## Man page
 
 ```
-sudo install -m 0644 man/osm.1 /usr/local/share/man/man1/
+sudo install -m 0644 man/osmctl.1 /usr/local/share/man/man1/
 mandb        # if your distro uses it
-man osm
+man osmctl
 ```
 
 ## What's not yet here
@@ -210,4 +211,3 @@ Integration tests against `master.apis.dev.openstreetmap.org` are gated behind
 ```
 go test -tags integration ./api/...
 ```
-

@@ -1,13 +1,13 @@
-.TH OSM 1 "2026-05-13" "osm" "User Commands"
+.TH OSMCTL 1 "2026-05-13" "osmctl" "User Commands"
 .SH NAME
-osm \- command-line client and TUI for OpenStreetMap
+osmctl \- command-line client and TUI for OpenStreetMap
 .SH SYNOPSIS
-.B osm
+.B osmctl
 .RI [ global-flags ]
 .I command
 .RI [ args... ]
 .SH DESCRIPTION
-.B osm
+.B osmctl
 manages an OpenStreetMap account from the terminal: changesets, element edits,
 notes, the private inbox, GPS traces, and a Bubbletea TUI for interactive
 browsing and editing. Authentication is OAuth 2.0 with PKCE; tokens persist
@@ -33,30 +33,30 @@ API base URL. Overrides
 OAuth2 client id. Overrides
 .B OSM_CLIENT_ID
 and any value persisted by a previous
-.BR "osm login" .
+.BR "osmctl login" .
 .TP
 .B -h, --help
 Help for any command.
 .SH AUTHENTICATION
 .TP
-.B osm login
+.B osmctl login
 Run the OAuth2 PKCE flow. Opens a browser, listens on
 .BR 127.0.0.1:17654/callback ,
 exchanges the authorization code, and writes the token to disk. The first
 .B --client-id
 used is remembered so later commands don't need it.
 .TP
-.B osm logout
+.B osmctl logout
 Remove the stored token.
 .TP
-.B osm whoami
+.B osmctl whoami
 Print the authenticated user's display name and id.
 .TP
-.B osm doctor
+.B osmctl doctor
 Show server capabilities and the current token's scopes.
 .SH CHANGESETS
 .TP
-.B osm changeset list \fR[\fB--mine\fR] [\fB--format \fITPL\fR]
+.B osmctl changeset list \fR[\fB--mine\fR] [\fB--format \fITPL\fR]
 List changesets. With
 .B --mine
 limits to the authenticated user.
@@ -89,19 +89,19 @@ Template functions:
 .BR json ,
 .BR csv .
 .TP
-.B osm changeset show \fIID\fR
+.B osmctl changeset show \fIID\fR
 Show one changeset including its discussion comments.
 .TP
-.B osm changeset download \fIID\fR
+.B osmctl changeset download \fIID\fR
 Print the raw osmChange XML uploaded in the changeset.
 .TP
-.B osm changeset open \fR[\fB--comment \fITEXT\fR] [\fB--source \fITEXT\fR]
+.B osmctl changeset open \fR[\fB--comment \fITEXT\fR] [\fB--source \fITEXT\fR]
 Open a new changeset; prints its id.
 .TP
-.B osm changeset close \fIID\fR
+.B osmctl changeset close \fIID\fR
 Close an open changeset.
 .TP
-.B osm changeset comment \fIID\fR \fITEXT\fR
+.B osmctl changeset comment \fIID\fR \fITEXT\fR
 Post a discussion comment.
 .SH ELEMENT EDITS
 The
@@ -110,9 +110,9 @@ subcommands open a single-purpose changeset, apply one change, then close it.
 For multi-edit workflows pass
 .B --changeset \fIID\fR
 to reuse an already-open changeset (typically one returned by
-.BR "osm changeset open" ),
+.BR "osmctl changeset open" ),
 or use
-.B osm tui compose
+.B osmctl tui compose
 for the interactive flow.
 .TP
 .B --comment \fITEXT\fR
@@ -122,9 +122,9 @@ Changeset comment. Only valid when opening a new changeset; conflicts with
 .B --changeset \fIID\fR
 Reuse an existing open changeset. The edit subcommand skips the open and
 close steps; you are responsible for closing the changeset later with
-.BR "osm changeset close" .
+.BR "osmctl changeset close" .
 .TP
-.B osm edit tag \fIKIND\fR \fIID\fR \fIKEY\fR=\fIVAL\fR [\fIKEY\fR=\fIVAL\fR...] [\fB--comment \fITEXT\fR]
+.B osmctl edit tag \fIKIND\fR \fIID\fR \fIKEY\fR=\fIVAL\fR [\fIKEY\fR=\fIVAL\fR...] [\fB--comment \fITEXT\fR]
 Set or update tags. An empty value
 .RB ( amenity= )
 deletes the key.
@@ -135,32 +135,32 @@ is
 or
 .BR relation .
 .TP
-.B osm edit delete \fIKIND\fR \fIID\fR [\fB--comment \fITEXT\fR]
+.B osmctl edit delete \fIKIND\fR \fIID\fR [\fB--comment \fITEXT\fR]
 Delete the element.
 .TP
-.B osm history \fIKIND\fR \fIID\fR
+.B osmctl history \fIKIND\fR \fIID\fR
 Print every version of an element.
 .SH NOTES
 .TP
-.B osm note create \fB--lat \fIF\fR \fB--lon \fIF\fR \fITEXT\fR
+.B osmctl note create \fB--lat \fIF\fR \fB--lon \fIF\fR \fITEXT\fR
 Create a map note; prints its id.
 .TP
-.B osm note show \fIID\fR
+.B osmctl note show \fIID\fR
 Show a note and its comment thread.
 .TP
-.B osm note comment \fIID\fR \fITEXT\fR
+.B osmctl note comment \fIID\fR \fITEXT\fR
 Add a comment.
 .TP
-.B osm note close \fIID\fR [\fITEXT\fR]
+.B osmctl note close \fIID\fR [\fITEXT\fR]
 Close a note, optionally with a resolution comment.
 .TP
-.B osm note reopen \fIID\fR [\fITEXT\fR]
+.B osmctl note reopen \fIID\fR [\fITEXT\fR]
 Reopen a closed note.
 .SH MESSAGES
 .TP
-.B osm message inbox \fR[\fB--format \fITPL\fR]
+.B osmctl message inbox \fR[\fB--format \fITPL\fR]
 .TQ
-.B osm message outbox \fR[\fB--format \fITPL\fR]
+.B osmctl message outbox \fR[\fB--format \fITPL\fR]
 List inbox or outbox. Fields:
 .IR ID ,
 .IR FromUser ,
@@ -174,29 +174,29 @@ List inbox or outbox. Fields:
 .IR Deleted .
 .I Body
 is not returned in listings; fetch with
-.BR "osm message read" .
+.BR "osmctl message read" .
 Template functions:
 .BR date ,
 .BR json ,
 .BR csv .
 .TP
-.B osm message read \fIID\fR
+.B osmctl message read \fIID\fR
 Show one message including its body.
 .TP
-.B osm message delete \fIID\fR
+.B osmctl message delete \fIID\fR
 Delete a message.
 .SH TRACES
 .TP
-.B osm trace list
+.B osmctl trace list
 List the authenticated user's uploaded GPX traces.
 .TP
-.B osm trace show \fIID\fR
+.B osmctl trace show \fIID\fR
 Show one trace's metadata.
 .TP
-.B osm trace data \fIID\fR
+.B osmctl trace data \fIID\fR
 Print the raw GPX file content.
 .TP
-.B osm trace upload \fIFILE\fR \fB--description \fITEXT\fR [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
+.B osmctl trace upload \fIFILE\fR \fB--description \fITEXT\fR [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
 Upload a GPX file. Visibility is one of
 .BR public ,
 .BR trackable ,
@@ -205,20 +205,20 @@ Upload a GPX file. Visibility is one of
 (default
 .BR private ).
 .TP
-.B osm trace update \fIID\fR [\fB--description \fITEXT\fR] [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
+.B osmctl trace update \fIID\fR [\fB--description \fITEXT\fR] [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
 Replace metadata.
 .TP
-.B osm trace delete \fIID\fR
+.B osmctl trace delete \fIID\fR
 Delete a trace.
 .SH MAP
 .TP
-.B osm map \fIL,B,R,T\fR
+.B osmctl map \fIL,B,R,T\fR
 Download every feature inside the bbox
 .RI ( "left,bottom,right,top" )
 as osm XML on stdout.
 .SH TUI
 .TP
-.B osm tui \fR[\fITARGET\fR [\fIARGS...\fR]]
+.B osmctl tui \fR[\fITARGET\fR [\fIARGS...\fR]]
 Open the interactive TUI. Without arguments, lands on the main menu. With a
 target, deep-links to that screen:
 .RS
@@ -309,28 +309,28 @@ non-zero on failure (network errors, API errors, missing token, ...).
 First login:
 .RS
 .EX
-$ osm \-\-client\-id YOUR_CLIENT_ID login
+$ osmctl \-\-client\-id YOUR_CLIENT_ID login
 .EE
 .RE
 .PP
 Rename a node:
 .RS
 .EX
-$ osm edit tag node 12345 name="Caf\['e] Z" \-\-comment "rename"
+$ osmctl edit tag node 12345 name="Caf\['e] Z" \-\-comment "rename"
 .EE
 .RE
 .PP
 List your last changesets as JSONL:
 .RS
 .EX
-$ osm changeset list \-\-mine \-\-format '{{json .}}'
+$ osmctl changeset list \-\-mine \-\-format '{{json .}}'
 .EE
 .RE
 .PP
 Pipe a CSV report to your spreadsheet:
 .RS
 .EX
-$ osm changeset list \-\-mine \-\-format \\
+$ osmctl changeset list \-\-mine \-\-format \\
     '{{csv .ID (.CreatedAt.Format "2006-01-02") .User .Comment}}' \\
     > changesets.csv
 .EE
@@ -339,7 +339,7 @@ $ osm changeset list \-\-mine \-\-format \\
 Open the compose UI:
 .RS
 .EX
-$ osm tui compose
+$ osmctl tui compose
 .EE
 .RE
 .SH SEE ALSO
