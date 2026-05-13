@@ -1,0 +1,338 @@
+.TH OSM 1 "2026-05-13" "osm" "User Commands"
+.SH NAME
+osm \- command-line client and TUI for OpenStreetMap
+.SH SYNOPSIS
+.B osm
+.RI [ global-flags ]
+.I command
+.RI [ args... ]
+.SH DESCRIPTION
+.B osm
+manages an OpenStreetMap account from the terminal: changesets, element edits,
+notes, the private inbox, GPS traces, and a Bubbletea TUI for interactive
+browsing and editing. Authentication is OAuth 2.0 with PKCE; tokens persist
+in the user config directory.
+.PP
+The CLI talks to production by default
+.RI ( https://api.openstreetmap.org/api/0.6 ).
+Override with
+.B --api
+or
+.BR OSM_API_URL ;
+the OAuth endpoints are derived from the API host so any instance, including
+the sandbox at
+.IR master.apis.dev.openstreetmap.org ,
+works without further configuration.
+.SH GLOBAL OPTIONS
+.TP
+.B --api \fIURL\fR
+API base URL. Overrides
+.BR OSM_API_URL .
+.TP
+.B --client-id \fIID\fR
+OAuth2 client id. Overrides
+.B OSM_CLIENT_ID
+and any value persisted by a previous
+.BR "osm login" .
+.TP
+.B -h, --help
+Help for any command.
+.SH AUTHENTICATION
+.TP
+.B osm login
+Run the OAuth2 PKCE flow. Opens a browser, listens on
+.BR 127.0.0.1:17654/callback ,
+exchanges the authorization code, and writes the token to disk. The first
+.B --client-id
+used is remembered so later commands don't need it.
+.TP
+.B osm logout
+Remove the stored token.
+.TP
+.B osm whoami
+Print the authenticated user's display name and id.
+.TP
+.B osm doctor
+Show server capabilities and the current token's scopes.
+.SH CHANGESETS
+.TP
+.B osm changeset list \fR[\fB--mine\fR] [\fB--format \fITPL\fR]
+List changesets. With
+.B --mine
+limits to the authenticated user.
+.B --format
+takes a Go
+.B text/template
+applied per changeset. Fields:
+.IR ID ,
+.IR User ,
+.IR UserID ,
+.IR CreatedAt ,
+.IR ClosedAt ,
+.IR Open ,
+.IR ChangesCount ,
+.IR MinLat ,
+.IR MaxLat ,
+.IR MinLon ,
+.IR MaxLon ,
+.IR CommentsCount ,
+.IR Tags .
+Methods:
+.IR Comment ,
+.IR Source ,
+.IR CreatedBy ,
+.IR Locale ,
+.IR ImageryUsed ,
+.IR Host ,
+.IR Bot .
+Template functions:
+.BR json ,
+.BR csv .
+.TP
+.B osm changeset show \fIID\fR
+Show one changeset including its discussion comments.
+.TP
+.B osm changeset download \fIID\fR
+Print the raw osmChange XML uploaded in the changeset.
+.TP
+.B osm changeset open \fR[\fB--comment \fITEXT\fR] [\fB--source \fITEXT\fR]
+Open a new changeset; prints its id.
+.TP
+.B osm changeset close \fIID\fR
+Close an open changeset.
+.TP
+.B osm changeset comment \fIID\fR \fITEXT\fR
+Post a discussion comment.
+.SH ELEMENT EDITS
+The
+.B edit
+subcommands open a single-purpose changeset, apply one change, then close it.
+For multi-edit workflows use
+.B osm tui compose
+or the library's
+.BR WithChangeset .
+.TP
+.B osm edit tag \fIKIND\fR \fIID\fR \fIKEY\fR=\fIVAL\fR [\fIKEY\fR=\fIVAL\fR...] [\fB--comment \fITEXT\fR]
+Set or update tags. An empty value
+.RB ( amenity= )
+deletes the key.
+.I KIND
+is
+.BR node ,
+.BR way ,
+or
+.BR relation .
+.TP
+.B osm edit delete \fIKIND\fR \fIID\fR [\fB--comment \fITEXT\fR]
+Delete the element.
+.TP
+.B osm history \fIKIND\fR \fIID\fR
+Print every version of an element.
+.SH NOTES
+.TP
+.B osm note create \fB--lat \fIF\fR \fB--lon \fIF\fR \fITEXT\fR
+Create a map note; prints its id.
+.TP
+.B osm note show \fIID\fR
+Show a note and its comment thread.
+.TP
+.B osm note comment \fIID\fR \fITEXT\fR
+Add a comment.
+.TP
+.B osm note close \fIID\fR [\fITEXT\fR]
+Close a note, optionally with a resolution comment.
+.TP
+.B osm note reopen \fIID\fR [\fITEXT\fR]
+Reopen a closed note.
+.SH MESSAGES
+.TP
+.B osm message inbox \fR[\fB--format \fITPL\fR]
+.TQ
+.B osm message outbox \fR[\fB--format \fITPL\fR]
+List inbox or outbox. Fields:
+.IR ID ,
+.IR FromUser ,
+.IR FromUserID ,
+.IR ToUser ,
+.IR ToUserID ,
+.IR SentOn ,
+.IR Title ,
+.IR BodyFormat ,
+.IR Read ,
+.IR Deleted .
+.I Body
+is not returned in listings; fetch with
+.BR "osm message read" .
+Template functions:
+.BR date ,
+.BR json ,
+.BR csv .
+.TP
+.B osm message read \fIID\fR
+Show one message including its body.
+.TP
+.B osm message delete \fIID\fR
+Delete a message.
+.SH TRACES
+.TP
+.B osm trace list
+List the authenticated user's uploaded GPX traces.
+.TP
+.B osm trace show \fIID\fR
+Show one trace's metadata.
+.TP
+.B osm trace data \fIID\fR
+Print the raw GPX file content.
+.TP
+.B osm trace upload \fIFILE\fR \fB--description \fITEXT\fR [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
+Upload a GPX file. Visibility is one of
+.BR public ,
+.BR trackable ,
+.BR identifiable ,
+.B private
+(default
+.BR private ).
+.TP
+.B osm trace update \fIID\fR [\fB--description \fITEXT\fR] [\fB--tags \fIT,T\fR] [\fB--visibility \fIV\fR]
+Replace metadata.
+.TP
+.B osm trace delete \fIID\fR
+Delete a trace.
+.SH MAP
+.TP
+.B osm map \fIL,B,R,T\fR
+Download every feature inside the bbox
+.RI ( "left,bottom,right,top" )
+as osm XML on stdout.
+.SH TUI
+.TP
+.B osm tui \fR[\fITARGET\fR [\fIARGS...\fR]]
+Open the interactive TUI. Without arguments, lands on the main menu. With a
+target, deep-links to that screen:
+.RS
+.IP \(bu 2
+.B profile
+\(em your OSM profile.
+.IP \(bu 2
+.B inbox
+or
+.B outbox
+\(em messages.
+.IP \(bu 2
+.B changesets
+\(em your changesets list.
+.IP \(bu 2
+.B changeset \fIID\fR
+\(em one changeset (elements, diff, XML).
+.IP \(bu 2
+.B notes
+\(em notes lookup.
+.IP \(bu 2
+.B history \fIKIND\fR \fIID\fR
+\(em element version history.
+.IP \(bu 2
+.B doctor
+\(em server capabilities and token scopes.
+.IP \(bu 2
+.B traces
+\(em GPS traces list.
+.IP \(bu 2
+.B compose
+(alias
+.BR new )
+\(em stage a new changeset for upload.
+.RE
+.PP
+Common keys: \fBesc\fR back, \fBtab\fR swap focus between split panes,
+\fB/\fR filter on lists, \fBr\fR refresh. The compose flow lets you add
+existing elements by id or create new relations, edit tags and (for relations)
+members in a two-pane view, then submit everything as one atomic upload.
+.PP
+Theme follows the terminal background via
+.BR COLORFGBG ;
+override with
+.BR GLAMOUR_STYLE = light
+or
+.BR GLAMOUR_STYLE = dark .
+.SH FILES
+.TP
+.IR $XDG_CONFIG_HOME/osm/token.json " (mode 0600)"
+OAuth2 access and refresh token. Overridable with
+.BR OSM_TOKEN_PATH .
+.TP
+.I $XDG_CONFIG_HOME/osm/config.json
+Persisted CLI defaults (currently just the client id). Overridable with
+.BR OSM_CONFIG_PATH .
+.SH ENVIRONMENT
+.TP
+.B OSM_CLIENT_ID
+OAuth2 client id.
+.TP
+.B OSM_API_URL
+API base URL. Default
+.IR https://api.openstreetmap.org/api/0.6 .
+.TP
+.B OSM_TOKEN_PATH
+Token file location.
+.TP
+.B OSM_CONFIG_PATH
+Config file location.
+.TP
+.B GLAMOUR_STYLE
+.B light
+or
+.BR dark .
+Bypasses terminal-bg detection.
+.TP
+.B COLORFGBG
+Read by terminals like xterm, Konsole, and urxvt to publish foreground and
+background colors. The TUI parses the last segment to pick a theme when
+.B GLAMOUR_STYLE
+is unset.
+.SH EXIT STATUS
+.B 0
+on success,
+non-zero on failure (network errors, API errors, missing token, ...).
+.SH EXAMPLES
+First login:
+.RS
+.EX
+$ osm \-\-client\-id YOUR_CLIENT_ID login
+.EE
+.RE
+.PP
+Rename a node:
+.RS
+.EX
+$ osm edit tag node 12345 name="Caf\['e] Z" \-\-comment "rename"
+.EE
+.RE
+.PP
+List your last changesets as JSONL:
+.RS
+.EX
+$ osm changeset list \-\-mine \-\-format '{{json .}}'
+.EE
+.RE
+.PP
+Pipe a CSV report to your spreadsheet:
+.RS
+.EX
+$ osm changeset list \-\-mine \-\-format \\
+    '{{csv .ID (.CreatedAt.Format "2006-01-02") .User .Comment}}' \\
+    > changesets.csv
+.EE
+.RE
+.PP
+Open the compose UI:
+.RS
+.EX
+$ osm tui compose
+.EE
+.RE
+.SH SEE ALSO
+.IR https://wiki.openstreetmap.org/wiki/API_v0.6 ,
+.IR https://www.openstreetmap.org/oauth2/applications .
+.SH BUGS
+Report at
+.IR https://github.com/raspbeguy/osm/issues .
