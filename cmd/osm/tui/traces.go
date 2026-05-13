@@ -49,6 +49,7 @@ type tracesModel struct {
 	viewport    viewport.Model
 	data        map[int64]string
 	dataLoading map[int64]bool
+	dataErr     map[int64]error
 	err         error
 	loading     bool
 	focus       int  // 0=list, 1=detail
@@ -71,6 +72,7 @@ func newTraces(c *api.Client) tracesModel {
 		viewport:    viewport.New(40, 20),
 		data:        map[int64]string{},
 		dataLoading: map[int64]bool{},
+		dataErr:     map[int64]error{},
 	}
 }
 
@@ -122,6 +124,9 @@ func (m tracesModel) ensureData(id int64) tea.Cmd {
 	if m.dataLoading[id] {
 		return nil
 	}
+	if _, ok := m.dataErr[id]; ok {
+		return nil
+	}
 	m.dataLoading[id] = true
 	return tea.Batch(m.spinner.Tick, m.fetchData(id))
 }
@@ -144,7 +149,10 @@ func (m tracesModel) Update(msg tea.Msg) (tracesModel, tea.Cmd) {
 		return m, cmd
 	case traceDataLoadedMsg:
 		delete(m.dataLoading, msg.id)
-		if msg.err == nil {
+		if msg.err != nil {
+			m.dataErr[msg.id] = msg.err
+		} else {
+			delete(m.dataErr, msg.id)
 			m.data[msg.id] = msg.data
 		}
 		m = m.rewrap()
@@ -204,6 +212,10 @@ func (m tracesModel) rewrap() tracesModel {
 	if m.showData {
 		if m.dataLoading[id] {
 			m.viewport.SetContent(m.spinner.View() + " loading gpx...")
+			return m
+		}
+		if err, ok := m.dataErr[id]; ok {
+			m.viewport.SetContent(errorStyle.Render("error: " + err.Error()))
 			return m
 		}
 		if data, ok := m.data[id]; ok {
