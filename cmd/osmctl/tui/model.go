@@ -41,22 +41,22 @@ type navigateMsg struct {
 }
 
 type rootModel struct {
-	client      *api.Client
-	startCmd    tea.Cmd
-	width       int
-	height      int
-	screen      screen
-	menu        menuModel
-	profile     profileModel
-	inbox       messagesModel
-	outbox      messagesModel
-	changesets  changesetsModel
-	csview      changesetViewModel
-	notes       notesModel
-	doctor      doctorModel
-	history     historyModel
-	traces      tracesModel
-	compose     composeChangesetModel
+	client     *api.Client
+	startCmd   tea.Cmd
+	width      int
+	height     int
+	screen     screen
+	menu       menuModel
+	profile    profileModel
+	inbox      messagesModel
+	outbox     messagesModel
+	changesets changesetsModel
+	csview     changesetViewModel
+	notes      notesModel
+	doctor     doctorModel
+	history    historyModel
+	traces     tracesModel
+	compose    composeChangesetModel
 	addElement addElementModel
 	editEl     editElementModel
 	submit     submitChangesetModel

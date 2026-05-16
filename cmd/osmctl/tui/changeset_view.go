@@ -609,7 +609,7 @@ func extractChangesetElements(xmlStr string) ([]changesetElement, error) {
 	toMembers := func(in []memX) []memberDescr {
 		out := make([]memberDescr, len(in))
 		for i, m := range in {
-			out[i] = memberDescr{Type: m.Type, Ref: m.Ref, Role: m.Role}
+			out[i] = memberDescr(m)
 		}
 		return out
 	}
