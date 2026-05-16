@@ -28,7 +28,7 @@ jobs:
 
       - uses: goreleaser/goreleaser-action@v7
         with:
-          version: latest
+          version: '~> v2'
           args: >-
             ${{ (github.event_name == 'workflow_dispatch' && inputs.snapshot)
                 && 'release --clean --snapshot --skip=publish'
