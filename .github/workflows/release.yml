@@ -3,6 +3,12 @@ name: release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: 'Build a snapshot (no GitHub release published)'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -23,6 +29,16 @@ jobs:
       - uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
-          args: release --clean
+          args: >-
+            ${{ (github.event_name == 'workflow_dispatch' && inputs.snapshot)
+                && 'release --clean --snapshot --skip=publish'
+                || 'release --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: upload snapshot artifacts
+        if: github.event_name == 'workflow_dispatch' && inputs.snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: osmctl-snapshot
+          path: dist/*
