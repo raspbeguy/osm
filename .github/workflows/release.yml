@@ -38,7 +38,7 @@ jobs:
 
       - name: upload snapshot artifacts
         if: github.event_name == 'workflow_dispatch' && inputs.snapshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: osmctl-snapshot
           path: dist/*
